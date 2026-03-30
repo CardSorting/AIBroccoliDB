@@ -27,8 +27,8 @@ ${chalk.green.bold(' |____/|_|  \\___/ \\___\\___\\___/|_|_|____/|____/ ')}
 `;
 
 async function main() {
-  console.log(ASCII_LOGO);
-  console.log(
+  console.info(ASCII_LOGO);
+  console.info(
     `${BROCCOLI_ICON} ${chalk.bold.green('BroccoliDB')} — ${chalk.dim('The Context Engine for Agents')}\n`
   );
 
@@ -43,36 +43,36 @@ async function main() {
   } else if (command === '--help' || !command) {
     showHelp();
   } else {
-    console.log(chalk.red(`Unknown command: ${command}`));
+    console.warn(chalk.red(`Unknown command: ${command}`));
     showHelp();
     process.exit(1);
   }
 }
 
 function showHelp() {
-  console.log(`${chalk.bold.white('USAGE')}`);
-  console.log(`  ${chalk.dim('$')} npx broccolidb ${chalk.yellow('<command>')}\n`);
+  console.info(`${chalk.bold.white('USAGE')}`);
+  console.info(`  ${chalk.dim('$')} npx broccolidb ${chalk.yellow('<command>')}\n`);
 
-  console.log(`${chalk.bold.white('COMMANDS')}`);
-  console.log(
+  console.info(`${chalk.bold.white('COMMANDS')}`);
+  console.info(
     `  ${chalk.green('init')}    ${chalk.dim('→')}  Initialize and index the current Git repository`
   );
-  console.log(
+  console.info(
     `  ${chalk.green('status')}  ${chalk.dim('→')}  View the health and stats of your Context Graph`
   );
-  console.log(`  ${chalk.green('serve')}   ${chalk.dim('→')}  Start the BroccoliDB MCP server`);
-  console.log(`  ${chalk.green('config')}  ${chalk.dim('→')}  Manage local settings and secrets\n`);
+  console.info(`  ${chalk.green('serve')}   ${chalk.dim('→')}  Start the BroccoliDB MCP server`);
+  console.info(`  ${chalk.green('config')}  ${chalk.dim('→')}  Manage local settings and secrets\n`);
 
-  console.log(`${chalk.bold.white('EXAMPLES')}`);
-  console.log(`  ${chalk.dim('$')} npx broccolidb init`);
-  console.log(`  ${chalk.dim('$')} npx broccolidb status`);
-  console.log(`  ${chalk.dim('$')} npx broccolidb config set gemini_api_key xxxx\n`);
+  console.info(`${chalk.bold.white('EXAMPLES')}`);
+  console.info(`  ${chalk.dim('$')} npx broccolidb init`);
+  console.info(`  ${chalk.dim('$')} npx broccolidb status`);
+  console.info(`  ${chalk.dim('$')} npx broccolidb config set gemini_api_key xxxx\n`);
 }
 
 async function status() {
   const dbPath = path.resolve(process.cwd(), 'broccolidb.db');
   if (!fs.existsSync(dbPath)) {
-    console.log(
+    console.warn(
       chalk.red(`✘ Error: Database not found. Run ${chalk.bold('npx broccolidb init')} first.`)
     );
     return;
@@ -109,37 +109,37 @@ async function status() {
 
     spinner.stop();
 
-    console.log(`${chalk.bold.white('REPOSITORY STATUS')}`);
-    console.log(`  ${chalk.bold('Path:')}           ${chalk.dim(process.cwd())}`);
-    console.log(
+    console.info(`${chalk.bold.white('REPOSITORY STATUS')}`);
+    console.info(`  ${chalk.bold('Path:')}           ${chalk.dim(process.cwd())}`);
+    console.info(
       `  ${chalk.bold('Database:')}       ${chalk.cyan('broccolidb.db')} ${chalk.dim(`(${totalSize}MB)`)}`
     );
-    console.log(`  ${chalk.bold('Embeddings:')}     ${embeddingStatus}`);
+    console.info(`  ${chalk.bold('Embeddings:')}     ${embeddingStatus}`);
     if (!apiKey) {
-      console.log(
+      console.info(
         `  ${chalk.dim('TIP: Use `npx broccolidb config wizard` to enable semantic search.')}`
       );
     }
-    console.log();
+    console.info();
 
-    console.log(`${chalk.bold.white('GRAPH DENSITY')}`);
-    console.log(`  ${chalk.bold('Nodes:')}          ${chalk.green(nodes.length)}`);
-    console.log(`  ${chalk.bold('Edges:')}          ${chalk.green(edgesCount)}`);
-    console.log(
+    console.info(`${chalk.bold.white('GRAPH DENSITY')}`);
+    console.info(`  ${chalk.bold('Nodes:')}          ${chalk.green(nodes.length)}`);
+    console.info(`  ${chalk.bold('Edges:')}          ${chalk.green(edgesCount)}`);
+    console.info(
       `  ${chalk.bold('Hub Count:')}      ${chalk.green(hubNodes)} ${chalk.dim('(Highly connected files)')}`
     );
-    console.log();
+    console.info();
 
     if (nodes.length > 0) {
-      console.log(`${chalk.bold.white('TOP HUB NODES')}`);
+      console.info(`${chalk.bold.white('TOP HUB NODES')}`);
       const topHubs = [...nodes].sort((a, b) => (b.hubScore || 0) - (a.hubScore || 0)).slice(0, 5);
       topHubs.forEach((h) => {
-        console.log(
+        console.info(
           `  ${chalk.dim('•')} ${chalk.bold(h.id.padEnd(20))} ${chalk.dim('score:')} ${chalk.yellow(h.hubScore)}`
         );
       });
     }
-    console.log();
+    console.info();
   } catch (e: unknown) {
     const error = e instanceof Error ? e.message : String(e);
     spinner.fail(chalk.red(`Analysis failed: ${error}`));
@@ -163,31 +163,31 @@ async function config() {
       values: { key, value, updatedAt: Date.now() },
       layer: 'infrastructure',
     });
-    console.log(
+    console.info(
       `${chalk.green('✅')} ${chalk.bold('Saved')} ${chalk.cyan(key)} ${chalk.dim('→')} ${key.includes('key') ? chalk.dim('********') : chalk.white(value)}`
     );
   } else if (subCommand === 'get' && key) {
     const row = await pool.selectOne('settings', [{ column: 'key', value: key }]);
     if (row) {
-      console.log(chalk.cyan(row.value));
+      console.info(chalk.cyan(row.value));
     } else {
-      console.log(chalk.red(`✘ Error: Setting '${key}' not found.`));
+      console.warn(chalk.red(`✘ Error: Setting '${key}' not found.`));
     }
   } else if (subCommand === 'list') {
     const rows = await pool.selectWhere('settings', []);
-    console.log(chalk.bold.white('CONFIGURATION'));
+    console.info(chalk.bold.white('CONFIGURATION'));
     if (rows.length === 0) {
-      console.log(chalk.dim('  (No settings found)'));
+      console.info(chalk.dim('  (No settings found)'));
     } else {
       rows.forEach((r) => {
         const displayValue = r.key.includes('key') ? chalk.dim('********') : chalk.cyan(r.value);
-        console.log(`  ${chalk.bold(r.key.padEnd(18))} ${chalk.dim('│')} ${displayValue}`);
+        console.info(`  ${chalk.bold(r.key.padEnd(18))} ${chalk.dim('│')} ${displayValue}`);
       });
     }
-    console.log();
+    console.info();
   } else if (subCommand === 'wizard') {
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    console.log(chalk.bold.white('SETTINGS WIZARD'));
+    console.info(chalk.bold.white('SETTINGS WIZARD'));
     const key = await rl.question(`${chalk.green('?')} ${chalk.bold('Enter Gemini API Key:')} `);
     if (key) {
       await pool.push({
@@ -197,17 +197,17 @@ async function config() {
         values: { key: 'gemini_api_key', value: key, updatedAt: Date.now() },
         layer: 'infrastructure',
       });
-      console.log(`${chalk.green('✅')} API key updated.`);
+      console.info(`${chalk.green('✅')} API key updated.`);
     }
     rl.close();
   } else {
-    console.log(`${chalk.bold.red('✘ Error:')} Invalid arguments.`);
-    console.log(`${chalk.bold('Usage:')} broccolidb config <set|get|list|wizard> [key] [value]`);
+    console.warn(`${chalk.bold.red('✘ Error:')} Invalid arguments.`);
+    console.info(`${chalk.bold('Usage:')} broccolidb config <set|get|list|wizard> [key] [value]`);
   }
 }
 
 async function init() {
-  console.log(`${chalk.bold.white('SETUP WIZARD')}`);
+  console.info(`${chalk.bold.white('SETUP WIZARD')}`);
   const spinner = ora({ text: 'Checking environment...', color: 'green' }).start();
 
   // Auto-update .gitignore
@@ -250,8 +250,8 @@ async function init() {
   });
 
   if (!apiKey) {
-    console.log(`\n${chalk.yellow('⚠️ ')} ${chalk.bold('Gemini API Key missing!')}`);
-    console.log(`${chalk.dim('BroccoliDB uses Gemini for high-performance semantic search.')}\n`);
+    console.info(`\n${chalk.yellow('⚠️ ')} ${chalk.bold('Gemini API Key missing!')}`);
+    console.info(`${chalk.dim('BroccoliDB uses Gemini for high-performance semantic search.')}\n`);
 
     apiKey = await rl.question(`${chalk.green('?')} ${chalk.bold('Enter your Gemini API Key:')} `);
 
@@ -263,9 +263,9 @@ async function init() {
         values: { key: 'gemini_api_key', value: apiKey, updatedAt: Date.now() },
         layer: 'infrastructure',
       });
-      console.log(`\n${chalk.green('✅')} ${chalk.dim('Key persisted to local database.')}\n`);
+      console.info(`\n${chalk.green('✅')} ${chalk.dim('Key persisted to local database.')}\n`);
     } else {
-      console.log(
+      console.warn(
         `\n${chalk.red('✘')} ${chalk.bold('Setup aborted.')} AI features will be disabled.`
       );
       process.exit(1);
@@ -283,15 +283,15 @@ async function init() {
   let repo: Repository;
   try {
     repo = await ws.getRepo(repoName);
-  } catch (_e) {
-    repo = await ws.createRepo(repoName);
-  }
+    } catch {
+      // Ignore
+    }
   spinner.succeed(`Database ready ${chalk.dim(`(${dbPath})`)}`);
 
   // Seamless Integration
   const claudeConfigPath = getClaudeConfigPath();
   if (claudeConfigPath) {
-    console.log(`\n${chalk.bold.white('SEAMLESS INTEGRATION')}`);
+    console.info(`\n${chalk.bold.white('SEAMLESS INTEGRATION')}`);
     const answer = await rl.question(
       `${chalk.green('?')} ${chalk.bold('Automatically add BroccoliDB to Claude Desktop?') + chalk.dim(' (Y/n)')} `
     );
@@ -313,12 +313,12 @@ async function init() {
         };
 
         fs.writeFileSync(claudeConfigPath, JSON.stringify(config, null, 2));
-        console.log(
+        console.info(
           `${chalk.green('✅')} ${chalk.bold('Integrated!')} BroccoliDB added to ${chalk.dim(claudeConfigPath)}\n`
         );
-      } catch (_e: unknown) {
-        const error = _e instanceof Error ? _e.message : String(_e);
-        console.log(`${chalk.red('✘')} ${chalk.bold('Integration failed:')} ${error}\n`);
+      } catch (e: unknown) {
+        const error = e instanceof Error ? e.message : String(e);
+        console.warn(`${chalk.red('✘')} ${chalk.bold('Integration failed:')} ${error}\n`);
       }
     }
   }
@@ -332,7 +332,7 @@ async function init() {
   }
 
   const filesStr = await git.raw(['ls-files']);
-  const files = filesStr.split('\n').filter((f) => f.trim().length > 0);
+  const files = filesStr.split('\n').filter((f: string) => f.trim().length > 0);
   spinner.succeed(`Discovered ${chalk.bold.green(files.length)} files for indexing.`);
 
   const head = await git.revparse(['--abbrev-ref', 'HEAD']);
@@ -340,7 +340,7 @@ async function init() {
 
   try {
     await repo.resolveRef(branch);
-  } catch (_e) {
+  } catch {
     spinner.info(`New branch detected: ${chalk.cyan(branch)}`);
   }
 
@@ -368,12 +368,12 @@ async function init() {
 
   rl.close();
 
-  console.log(
+  console.info(
     `\n${chalk.bold.green('✨ SUCCESS')} ${chalk.white('BroccoliDB is ready for use.')}\n`
   );
 
-  console.log(`${chalk.bold.white('MANUAL CONFIGURATION')}`);
-  console.log(chalk.dim('If you prefer manual setup, add this to your config:'));
+  console.info(`${chalk.bold.white('MANUAL CONFIGURATION')}`);
+  console.info(chalk.dim('If you prefer manual setup, add this to your config:'));
 
   const configBlock = JSON.stringify(
     {
@@ -389,12 +389,12 @@ async function init() {
     2
   );
 
-  console.log(chalk.bgGray.black(`\n${configBlock}\n`));
+  console.info(chalk.bgGray.black(`\n${configBlock}\n`));
 
-  console.log(`${chalk.bold.white('NEXT STEPS')}`);
-  console.log(`  1. ${chalk.bold('Restart')} Claude Desktop`);
-  console.log(`  2. In a new chat, ask: ${chalk.cyan('"What are the most important files?"')}`);
-  console.log(`  3. Run ${chalk.bold('npx broccolidb status')} anytime to see graph health.\n`);
+  console.info(`${chalk.bold.white('NEXT STEPS')}`);
+  console.info(`  1. ${chalk.bold('Restart')} Claude Desktop`);
+  console.info(`  2. In a new chat, ask: ${chalk.cyan('"What are the most important files?"')}`);
+  console.info(`  3. Run ${chalk.bold('npx broccolidb status')} anytime to see graph health.\n`);
 }
 
 function getClaudeConfigPath(): string | null {
@@ -455,7 +455,7 @@ async function serve() {
 
   // Logs to stderr
   console.error(chalk.dim(`[BroccoliDB] Internal server starting for ${chalk.bold(repoName)}...`));
-  // @ts-expect-error - Internal server access for CLI
+  // @ts-expect-error - Internal server access is required for CLI initialization
   await server.server.connect(transport);
 }
 

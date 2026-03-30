@@ -1007,15 +1007,18 @@ export class Repository {
       if (
         sourceNode?.metadata?.isHierarchical &&
         targetNode?.metadata?.isHierarchical &&
-        baseNode?.metadata?.isHierarchical
+        baseNode?.metadata?.isHierarchical &&
+        baseNode.metadata.treeHash &&
+        sourceNode.metadata.treeHash &&
+        targetNode.metadata.treeHash
       ) {
         // High-Performance Hierarchical Merge
         const result = await this.db.runTransaction(async (agentId) => {
           return this.mergeTrees(
             null,
-            baseNode.metadata?.treeHash!,
-            sourceNode.metadata?.treeHash!,
-            targetNode.metadata?.treeHash!,
+            baseNode.metadata!.treeHash!,
+            sourceNode.metadata!.treeHash!,
+            targetNode.metadata!.treeHash!,
             agentId
           );
         });
@@ -1212,11 +1215,16 @@ export class Repository {
     const baseNode = await this.getNode(lcaId);
 
     let affectedPaths: string[] = [];
-    if (sourceNode.metadata?.isHierarchical && baseNode.metadata?.isHierarchical) {
+    if (
+      sourceNode.metadata?.isHierarchical &&
+      baseNode.metadata?.isHierarchical &&
+      baseNode.metadata.treeHash &&
+      sourceNode.metadata.treeHash
+    ) {
       // O(log N) Affected Path detection via hash diffing
       affectedPaths = await this.calculateAffectedPaths(
-        baseNode.metadata.treeHash!,
-        sourceNode.metadata.treeHash!
+        baseNode.metadata.treeHash,
+        sourceNode.metadata.treeHash
       );
     } else {
       const sourceTree = sourceNode.tree || (await this.resolveTree(sourceNode));
@@ -1422,9 +1430,9 @@ export class Repository {
             confidence: r.confidence,
           }));
         }
-      } catch (_e) {
-        /* ignore audit errors */
-      }
+    } catch {
+      // Ignore
+    }
     }
 
     return {

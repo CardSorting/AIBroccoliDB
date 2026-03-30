@@ -34,9 +34,9 @@ export function getLayer(filePath: string): Layer {
         }
       }
     }
-  } catch (_e) {
-    // Fallback to default logic
-  }
+    } catch {
+      // Ignore
+    }
 
   if (normalized.includes('src/domain/')) return 'domain';
   if (normalized.includes('src/infrastructure/')) return 'infrastructure';

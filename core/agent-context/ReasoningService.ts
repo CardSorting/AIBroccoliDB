@@ -188,9 +188,9 @@ export class ReasoningService {
         } else {
           discountingFactor *= 0.95;
         }
-      } catch (_e) {
-        /* skip */
-      }
+    } catch {
+      // Ignore
+    }
     }
 
     const reinforcement = Math.min(0.15, (uniqueCommits.size - 1) * 0.05);

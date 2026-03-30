@@ -48,9 +48,9 @@ export class BroccoliDBMCP {
       console.log(`[AgentGit][Lifecycle] Self-destructing expired ghost branch: ${branch.name}`);
       try {
         await this.repo.deleteBranch(branch.name);
-      } catch (_err) {
-        // Already gone
-      }
+    } catch {
+      // Ignore
+    }
     }
   }
 

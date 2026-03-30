@@ -149,8 +149,7 @@ Output format: JSON array of EXACTLY 3 objects with "text" and "type" (one of fi
       this.lastSuggestions = finalSuggestions;
       this.lastFetchTime = Date.now();
       return finalSuggestions;
-    } catch (err) {
-      console.error('[SuggestionService] Failed to generate suggestions:', err);
+    } catch {
       return this.getFallbackSuggestions();
     } finally {
       this.isGenerating = false;

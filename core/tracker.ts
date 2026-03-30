@@ -16,9 +16,9 @@ export interface EnvironmentMetadata {
 /**
  * EnvironmentTracker manages system metadata and pricing estimates.
  */
-export namespace EnvironmentTracker {
+export const EnvironmentTracker = {
   // Production Parameterized Constants
-  const CONFIG = {
+  CONFIG: {
     DEFAULT_PRICING: {
       'tier-high': { input: 0.01, output: 0.03 },
       'tier-medium': { input: 0.003, output: 0.015 },
@@ -26,17 +26,21 @@ export namespace EnvironmentTracker {
       default: { input: 0.002, output: 0.008 },
     },
     CACHE_SIZE: 100,
-  };
+  },
 
-  const PRICING: Record<string, { input: number; output: number }> = {
-    ...CONFIG.DEFAULT_PRICING,
-  };
-  const trackerCache = new LRUCache<
+  PRICING: {
+    'tier-high': { input: 0.01, output: 0.03 },
+    'tier-medium': { input: 0.003, output: 0.015 },
+    'tier-low': { input: 0.0005, output: 0.0015 },
+    default: { input: 0.002, output: 0.008 },
+  } as Record<string, { input: number; output: number }>,
+
+  trackerCache: new LRUCache<
     string,
     { totalCommits: number; totalTokens: number; totalCost: number }
-  >(CONFIG.CACHE_SIZE);
+  >(100),
 
-  export function capture(): EnvironmentMetadata {
+  capture(): EnvironmentMetadata {
     return {
       osName: os.platform(),
       osVersion: os.release(),
@@ -45,42 +49,42 @@ export namespace EnvironmentTracker {
       nodeVersion: process.version,
       timestamp: new Date().toISOString(),
     };
-  }
+  },
 
   /**
    * Configure model pricing rates.
    */
-  export function setPricing(modelId: string, rates: { input: number; output: number }) {
-    PRICING[modelId] = rates;
-  }
+  setPricing(modelId: string, rates: { input: number; output: number }) {
+    this.PRICING[modelId] = rates;
+  },
 
   /**
    * Estimates cost for a given usage.
    */
-  export function estimateCost(usage: {
+  estimateCost(usage: {
     promptTokens: number;
     completionTokens: number;
     modelId?: string;
     pricingTier?: string;
   }): number {
     const tier = usage.pricingTier || usage.modelId || 'default';
-    const rates = PRICING[tier] ?? PRICING.default;
+    const rates = this.PRICING[tier] ?? this.PRICING.default;
     return (
       (usage.promptTokens / 1000) * rates.input + (usage.completionTokens / 1000) * rates.output
     );
-  }
+  },
 
   /**
    * Persists usage data to the repository's telemetry collection and updates O(1) aggregates.
    */
-  export async function recordUsage(
+  async recordUsage(
     db: BufferedDbPool,
     basePath: string,
     agentId: string,
     usage: { promptTokens: number; completionTokens: number; modelId?: string },
     taskId?: string | null
   ) {
-    const cost = EnvironmentTracker.estimateCost(usage);
+    const cost = this.estimateCost(usage);
     const tokens = usage.promptTokens + usage.completionTokens;
 
     // 1. Detailed Audit Record
@@ -98,7 +102,7 @@ export namespace EnvironmentTracker {
         modelId: usage.modelId || 'default',
         cost,
         timestamp: Date.now(),
-        environment: JSON.stringify(EnvironmentTracker.capture()),
+        environment: JSON.stringify(this.capture()),
       },
       layer: 'infrastructure',
     });
@@ -162,12 +166,12 @@ export namespace EnvironmentTracker {
     }
 
     // Invalidate caches
-    trackerCache.delete('global');
-    trackerCache.delete(`agent_${agentId}`);
-    if (taskId) trackerCache.delete(`task_${taskId}`);
-  }
+    this.trackerCache.delete('global');
+    this.trackerCache.delete(`agent_${agentId}`);
+    if (taskId) this.trackerCache.delete(`task_${taskId}`);
+  },
 
-  export function getReport(stats: {
+  getReport(stats: {
     totalCommits: number;
     totalTokens: number;
     totalCost: number;
@@ -184,13 +188,13 @@ Estimated Cost: $${stats.totalCost.toFixed(4)}
 Avg Tokens/Commit: ${efficiency}
 =============================
     `.trim();
-  }
+  },
 
   /**
    * Retrieves aggregate telemetry stats.
    * Optimized to read from pre-computed aggregate documents (O(1)).
    */
-  export async function getStats(
+  async getStats(
     db: BufferedDbPool,
     basePath: string,
     agentId?: string,
@@ -201,7 +205,7 @@ Avg Tokens/Commit: ${efficiency}
     if (taskId) docId = `task_${taskId}`;
     else if (agentId) docId = `agent_${agentId}`;
 
-    const cached = trackerCache.get(docId);
+    const cached = this.trackerCache.get(docId);
     if (cached) return cached;
 
     const row = await db.selectOne('telemetry_aggregates', [
@@ -218,10 +222,10 @@ Avg Tokens/Commit: ${efficiency}
       totalTokens: Number(row.totalTokens || 0),
       totalCost: Number(row.totalCost || 0),
     };
-    trackerCache.set(docId, statsObj);
+    this.trackerCache.set(docId, statsObj);
     return statsObj;
-  }
-}
+  },
+};
 
 export interface TelemetryPayload {
   agentId: string;

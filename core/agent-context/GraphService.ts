@@ -120,9 +120,9 @@ export class GraphService {
             );
             await this.updateKnowledge(inEdge.targetId, { edges: updatedEdges });
           }
-        } catch (_e) {
-          /* ignore */
-        }
+    } catch {
+      // Ignore
+    }
       }
     }
 
