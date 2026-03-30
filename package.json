@@ -1,5 +1,5 @@
 {
-  "name": "broccolidb",
+  "name": "@noorm/broccolidb",
   "version": "1.0.0",
   "description": "**The High-Performance, Asynchronous, and Hardened SQLite Infrastructure for Node.js.**",
   "type": "module",

@@ -12,7 +12,7 @@ export class TaskMutex {
   ): Promise<T> {
     const previous = TaskMutex.locks.get(key) || Promise.resolve();
 
-    let release: () => void;
+    let release!: () => void;
     const current = new Promise<void>((resolve) => {
       release = resolve;
     });

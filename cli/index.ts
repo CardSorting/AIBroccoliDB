@@ -280,7 +280,7 @@ async function init() {
   const ws = new Workspace(pool, userId, workspaceId);
   await ws.init();
 
-  let repo: Repository;
+  let repo!: Repository;
   try {
     repo = await ws.getRepo(repoName);
     } catch {
