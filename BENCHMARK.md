@@ -36,10 +36,26 @@ The `SqliteQueue` circular buffer was scaled to **1,000,000 slots**. This provid
 
 ---
 
+## 🧐 How to Interpret These Results
+
+When you run these benchmarks, you might notice that SQLite seems "idle" even when the logical throughput is in the millions. **This is by design.**
+
+### 1. High Logical/Physical Ratio = Success
+A ratio of **1,333,333 : 1** is not a lack of work—it is the ultimate metric of performance. It means BroccoliDB successfully offloaded 1.3 million operations to the **Layer 1 (Memory Engine)** and only required the **Layer 2 (SQLite Safety Net)** to wake up once to record the results.
+
+### 2. Physical Syncs are "Checkpoints"
+Don't think of a disk sync as a single transaction. Think of it as a **Durable Checkpoint**. In each sync, BroccoliDB is persisting a massive summary of all the "thoughts" processed in memory since the last flush.
+
+### 3. The Tradeoff
+If you see the physical sync count increasing, it means your batch sizes are too small or your flush interval is too frequent. While this increases durability (smaller data loss window), it will quickly bottleneck your system back down to standard SQLite speeds (~50k ops/sec).
+
+---
+
 ## 🏃 How to Reproduce
 
 ```bash
 # Run the Event Horizon Benchmark (1M Ops)
+# Observe the console logs for "Total Transactions" — lower is better.
 npx tsx tests/benchmark.ts
 ```
 

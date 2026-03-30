@@ -87,48 +87,56 @@ The pool uses an adaptive timer. If the buffer is empty, it flushes every **1000
 
 ---
 
-## 📈 The Amortized Persistence Model
+## 📈 The Amortized Persistence Model: RAM vs. SQLite
 
-BroccoliDB achieves **2.0M+ Logical Ops/Sec** on standard SQLite by decoupling the application's intent from the disk's physical sync speed.
+BroccoliDB achieves **2.0M+ Logical Ops/Sec** by recognizing a critical architectural truth: **CPU and RAM are the brain, and SQLite is the notebook.**
 
-### The Problem
-Traditional SQLite drivers attempt to sync to disk for every transaction. Disk syncs ($T_s$) are expensive (ms). Attempting 1M syncs/sec results in $N * T_s$ blocking time, which is catastrophic.
+### The Layers of Consciousness
+- **🧠 Layer 1: Memory (Active Work)**: Every enqueue, status update, and query results and is managed in-memory first. This is where 100% of the real-time processing performance lives.
+- **💾 Layer 2: SQLite (Durable Safety Net)**: SQLite is *not* a real-time engine in our system. It is a **Durable Checkpoint Layer**. Its only job is to write down a summary of what happened in memory so that the state can be recovered after a crash.
 
-### The Broccoli Solution
-BroccoliDB uses **Amortized Persistence**. We collect $N$ logical operations into a memory buffer and execute them in a single physical transaction ($T_p$).
+$$Speed = \frac{Memory Processing (Thoughts)}{Disk Syncs (Summaries)}$$
 
-$$Speed = \frac{N (Logical Ops)}{T_p (Physical Transaction)}$$
+In our latest audit, we achieved a **Logical/Physical Ratio of 1,333,333 : 1**. This means for every 1.3 million operations handled in memory, SQLite only performed **one physical sync**.
 
-In our latest audit:
-- $N = 1,333,333$ operations per sync
-- $T_p \approx 2900$ ms (Massive Batch)
-- **Logical/Physical Ratio**: **1,333,333 : 1**
+### The Tradeoff: Durability vs. Data Loss Window
+By treating SQLite as a discrete checkpoint layer rather than a real-time engine, we gain massive throughput, but introduce an intentional **Data Loss Window**.
+- **The Gap**: Operations that occur *between* checkpoints exist only in Layer 1 (Active Memory).
+- **The Risk**: If the process crashes before a flush, uncommitted operations are lost.
+- **The Recovery**: On restart, the system rebuilds its in-memory "brain" from the last successful Layer 2 (SQLite) checkpoint.
+
+### Why "Idle" SQLite is Success
+During high-performance benchmarks, SQLite might appear idle. This is intentional. It means the system is busy "thinking" in Layer 1 and is not wasting expensive I/O cycles on Layer 2 until it has a meaningful batch of work to record. 
+
+If SQLite were "busy" with every operation, you would be limited to standard SQLite speeds (approx 50k–200k ops/sec). Instead, BroccoliDB allows you to scale at the speed of memory.
+
+---
 
 ### Level 3: The Quantum Boost
-The final optimization to hit **1.5M+ ops/sec** was **Chunked Raw Inserts**. Instead of individual calls to the driver, BroccoliDB generates dynamic SQL for up to 100 rows at a time (`INSERT INTO ... VALUES (...), (...), ...`). This reduces context switching between JavaScript and the native SQLite engine by 100x.
+The final optimization to hit **1.5M+ ops/sec** was **Chunked Raw Inserts**. Instead of individual calls to the driver, BroccoliDB generates dynamic SQL for up to 100 rows at a time (`INSERT INTO ... VALUES (...), (...), ...`). This reduces context switching between the memory layer and the persistence layer by 100x.
 
 ---
 
 ## 🚀 Level 7: The Event Horizon (O(1) Memory Indexing)
 
-At 1,000,000+ operations, even "fast" in-memory array scanning becomes a bottleneck. Level 7 addresses the **$O(N)$ Scanning Penalty**.
+At 1,000,000+ operations, even "fast" in-memory array scanning becomes a bottleneck. Level 7 addresses the **$O(N)$ Scanning Penalty** in the Memory Layer.
 
 ### The Paradox of Scale
-When the `SqliteQueue` processes 1,000,000 pending jobs, a standard `selectWhere` must iterate through the entire buffer to find `status: pending`. 
+When the `SqliteQueue` processes 1,000,000 pending jobs, the memory engine must survive $O(N)$ lookups to find `status: pending`. 
 
 - **Level 6**: $T_{query} = O(N_{buffer})$. At 1M elements, this takes ~120ms per dequeue.
 - **Level 7**: $T_{query} = O(1)$. By maintaining a **Memory Index Map**, the query is reduced to a simple pointer retrieval.
 
 ### The Index Algorithm
-1. **Ingestion (`pushBatch`)**: Each `WriteOp` is evaluated. If it's a `queue_jobs` operation, it's added to a `Set<WriteOp>` in the `activeIndex` map indexed by `status`.
+1. **Ingestion (`pushBatch`)**: Each `WriteOp` is evaluated in RAM. If it's a `queue_jobs` operation, it's added to a `Set<WriteOp>` in the `activeIndex` map indexed by `status`.
 2. **Retrieval (`selectWhere`)**: The engine detects a query on an indexed column. It pulls the pre-filtered `Set` in **0.001ms** instead of scanning the full 1M elements.
-3. **Atomic Swap**: When the buffer flushes to disk, the `activeIndex` is atomically swapped with the `inFlightIndex`, ensuring that queries during the flush remain correct.
+3. **Atomic Swap**: When the memory buffer flushes to the checkpoint layer (SQLite), the `activeIndex` is atomically swapped with the `inFlightIndex`, ensuring that queries during the flush remain correct.
 
 ### Pipelined Correctness Formula
-To ensure uncommitted `updates` are handled correctly, we apply a filtering pass:
-$Result = (Base_{Disk} \cap Conditions) \cup (Active_{Index}) - (Deletions)$
+To ensure that Layer 1 (Active Memory) remains the absolute current state of truth, we apply a filtering pass:
+$Result = (Base_{Checkpoint} \cap Conditions) \cup (Active_{Index}) - (Deletions)$
 
-This produces the **absolute current state of truth** for the agent, combining disk data with uncommitted memory state in a single, atomic-feeling view.
+This produces the **absolute current state of truth** for the agent, combining the last Layer 2 checkpoint with the uncommitted Layer 1 state in a single, atomic-feeling view.
 
 ---
 

@@ -2,7 +2,11 @@
 
 **The High-Performance, Asynchronous, and Hardened SQLite Infrastructure for Node.js.**
 
-Welcome to BroccoliDB — a production-grade database and queue infrastructure designed for the modern, high-throughput applications. Whether you are building complex AI agent workflows, a massive knowledge graph, or a high-traffic web service, BroccoliDB provides the reliability of SQLite with the blistering performance of an in-memory system.
+Welcome to BroccoliDB — a production-grade infrastructure where **Memory is the Engine and SQLite is the Checkpoint.**
+
+Architecture in two layers:
+- **🧠 Layer 1: Memory (The Brain)**: Where 100% of the real-time processing happens.
+- **💾 Layer 2: SQLite (The Safety Net)**: A durable checkpoint layer that periodically records summaries of what happened in memory to ensure recovery after a crash.
 
 ---
 
@@ -26,36 +30,27 @@ Welcome to BroccoliDB — a production-grade database and queue infrastructure d
 
 ---
 
-## 🌟 Introduction
+BroccoliDB was born to solve this using a clear mental model:
+- **RAM = Your brain thinking at full speed.**
+- **SQLite = Writing notes in a notebook every few minutes.**
 
-In modern Node.js development, database drivers often struggle with the "bursty" nature of application logic — especially in AI workflows where an agent might perform hundreds of small reads and writes in a single reasoning step.
-
-BroccoliDB was born to solve this. It acts as an **asynchronous write-behind layer** that coalesces and batches operations, achieving throughputs that rival dedicated in-memory stores, while keeping your data safe in a standard, portable SQLite file.
+You're not writing down every single thought — just summaries. This allows you to achieve millions of operations per second in memory, while SQLite acts as your **eventual source of truth** and recovery anchor.
 
 ---
 
-## ✨ What Makes BroccoliDB Special?
+### What SQLite is Actually Doing
+Traditional database drivers hit the disk for every operation, capping your speed at ~50k–200k ops/sec. BroccoliDB treats SQLite differently:
+- **It is NOT driving your throughput.** (Memory is.)
+- **It IS your Durable Checkpoint Layer.** It occasionally wakes up, performs a massive batch write, and goes back to sleep.
+- **It IS your Recovery Anchor.** If the process dies, SQLite is what survives to rebuild your memory state upon restart.
 
-### The 2.0M+ Logical Ops/Sec Engine (**Verified**)
-BroccoliDB achieves incredible throughput by decoupling logical operations from physical persistence and using a **Chunked SQL Bypass** for the hottest data paths.
-- **Chunked & Coalesce**: Group row-sets into a single multi-row `INSERT` statement within a transaction.
-- **Amortized Disk Sync**: For 1,000,000 logical ops, BroccoliDB performs as few as **3 physical syncs**.
-- **Lock-Free Handoff**: Concurrent agents push to isolated shadow buffers with **zero global mutex contention**.
+> [!IMPORTANT]
+> **Performance Indicator**: 3 disk syncs for 1M operations is not "idle" behavior — it's the ultimate indicator of success. It means the system is only writing down essential summaries, not every individual thought.
 
-### The Event Horizon: 4.4M Jobs/Sec
-Level 7 optimization introduced **O(1) Status Indexing**, allowing the queue to process jobs at nearly the speed of memory.
-- **Processing Throughput**: **4,404,960 jobs/sec**.
-- **Scale**: Drains a 1,000,000-job queue in **0.23 seconds**.
-- **Index Architecture**: Specialized `activeIndex` Maps eliminate O(N) scanning of in-memory buffers.
-
-> [!TIP]
-> **View Performance Audit**: See the latest verified 2.0M+ results in our [Benchmarks (BENCHMARK.md)](./BENCHMARK.md).
-
-### Agent Shadows & Isolation
-One of our most unique features is **Agent Shadows**. They provide a "scratchpad" for complex multi-step processes. An agent can perform hundreds of database operations in a shadow workspace, reading back its own uncommitted state, without affecting the main database until the entire process is ready to `commit`.
-
-### O(1) Memory-First Indexing
-Our `SqliteQueue` and `BufferedDbPool` now leverage **O(1) Status Indexing**. This allows for instantaneous retrieval of pending tasks even when the write-behind buffer contains millions of operations. This is the "Event Horizon" — where database latency virtually disappears for the application logic.
+### The Tradeoff
+Because SQLite syncs are delayed:
+✅ **Insane Throughput**: Millions of ops/sec in memory.
+❌ **Window of Loss**: A small window of uncommitted data may be lost in a catastrophic system crash before the next checkpoint flush.
 
 ---
 

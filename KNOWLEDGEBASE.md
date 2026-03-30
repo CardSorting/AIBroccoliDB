@@ -24,12 +24,19 @@ Welcome to the internal documentation for BroccoliDB. This document provides a d
 
 ## 🏛️ Core Philosophy
 
-BroccoliDB is built on the premise that **SQLite is fast enough for production**, provided it is treated with care. By using an asynchronous write-behind layer, we can absorb bursts of activity that would normally cause `SQLITE_BUSY` errors, while still providing a synchronous-like consistency model for readers.
+BroccoliDB is built on a two-layer architecture that separates **Real-Time Processing** from **Durable Persistence**. 
+
+### The Layered Model
+1. **🧠 Layer 1: Memory (The Engine)**: This is where almost everything happens in real-time — enqueuing, de-duplication, coalescing, and complex query indexing. This in-memory sovereignty is why we achieve millions of operations per second.
+2. **💾 Layer 2: SQLite (The Safety Net)**: SQLite acts as a **Durable Checkpoint Layer**. Its job is to periodically record summaries of the work done in memory to ensure you can recover your state after a crash.
+
+### Why this works
+Traditional drivers treat SQLite as a real-time engine, hitting the disk per operation. BroccoliDB treats SQLite as a notebook: we think at full speed (RAM), and only write down the results of those thoughts (summaries) every few minutes.
 
 Our three pillars:
-1. **Asynchrony by Default**: All writes are buffered and flushed in bulk.
-2. **Agent Isolation**: "Agent Shadows" allow for complex, isolated scratchpads.
-3. **Graph-First**: Data is treated as a network of interconnected points of knowledge.
+1. **Memory Ingestion**: All writes hit the $O(1)$ memory buffer first.
+2. **Durable Checkpointing**: SQLite persists the batched state occasionally.
+3. **Recovery Sovereignty**: On restart, the memory engine is rebuilt entirely from the SQLite anchor.
 
 ---
 
