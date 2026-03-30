@@ -83,7 +83,7 @@ export class SpiderService {
           this.engine.deserialize(cache.content);
           lastCommit = metadata.commitHash;
           Logger.info(
-            `[SpiderService] Loaded bootstrap cache from commit: ${lastCommit?.substring(0, 7)}`,
+            `[SpiderService] Loaded bootstrap cache from commit: ${lastCommit?.substring(0, 7)}`
           );
         }
       }
@@ -97,7 +97,7 @@ export class SpiderService {
 
       if (lastCommit && currentHead && lastCommit === currentHead) {
         Logger.info(
-          `[SpiderService] Graph is already up to date at commit: ${currentHead.substring(0, 7)}`,
+          `[SpiderService] Graph is already up to date at commit: ${currentHead.substring(0, 7)}`
         );
         this.bootstrapped = true;
         return;
@@ -120,7 +120,7 @@ export class SpiderService {
             } catch {
               return null;
             }
-          }),
+          })
         );
         auditFiles.push(...(results.filter(Boolean) as { filePath: string; content: string }[]));
       }
@@ -136,7 +136,7 @@ export class SpiderService {
 
       const duration = Date.now() - startTime;
       Logger.info(
-        `[SpiderService] Graph bootstrapped with ${auditFiles.length} files in ${duration}ms.`,
+        `[SpiderService] Graph bootstrapped with ${auditFiles.length} files in ${duration}ms.`
       );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -195,7 +195,7 @@ export class SpiderService {
   async persistStructuralKnowledge(
     entropy: number,
     mermaid: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): Promise<string> {
     const kbId = `spider-snapshot-${Date.now()}`;
     await this.ctx.push({

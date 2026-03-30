@@ -78,7 +78,7 @@ export namespace EnvironmentTracker {
     basePath: string,
     agentId: string,
     usage: { promptTokens: number; completionTokens: number; modelId?: string },
-    taskId?: string | null,
+    taskId?: string | null
   ) {
     const cost = EnvironmentTracker.estimateCost(usage);
     const tokens = usage.promptTokens + usage.completionTokens;
@@ -194,7 +194,7 @@ Avg Tokens/Commit: ${efficiency}
     db: BufferedDbPool,
     basePath: string,
     agentId?: string,
-    taskId?: string,
+    taskId?: string
   ): Promise<{ totalCommits: number; totalTokens: number; totalCost: number }> {
     let docId = 'global';
 
@@ -261,10 +261,10 @@ export class AsyncTelemetryQueue {
           basePath,
           payload.agentId,
           payload.usage,
-          payload.taskId,
+          payload.taskId
         );
       },
-      { concurrency: 2, pollIntervalMs: 100 },
+      { concurrency: 2, pollIntervalMs: 100 }
     );
   }
 

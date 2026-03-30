@@ -14,7 +14,6 @@ import { BroccoliDBMCP } from '../core/mcp.js';
 import type { Repository } from '../core/repository.js';
 import { Workspace } from '../core/workspace.js';
 
-
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -30,7 +29,7 @@ ${chalk.green.bold(' |____/|_|  \\___/ \\___\\___\\___/|_|_|____/|____/ ')}
 async function main() {
   console.log(ASCII_LOGO);
   console.log(
-    `${BROCCOLI_ICON} ${chalk.bold.green('BroccoliDB')} — ${chalk.dim('The Context Engine for Agents')}\n`,
+    `${BROCCOLI_ICON} ${chalk.bold.green('BroccoliDB')} — ${chalk.dim('The Context Engine for Agents')}\n`
   );
 
   if (command === 'init') {
@@ -56,10 +55,10 @@ function showHelp() {
 
   console.log(`${chalk.bold.white('COMMANDS')}`);
   console.log(
-    `  ${chalk.green('init')}    ${chalk.dim('→')}  Initialize and index the current Git repository`,
+    `  ${chalk.green('init')}    ${chalk.dim('→')}  Initialize and index the current Git repository`
   );
   console.log(
-    `  ${chalk.green('status')}  ${chalk.dim('→')}  View the health and stats of your Context Graph`,
+    `  ${chalk.green('status')}  ${chalk.dim('→')}  View the health and stats of your Context Graph`
   );
   console.log(`  ${chalk.green('serve')}   ${chalk.dim('→')}  Start the BroccoliDB MCP server`);
   console.log(`  ${chalk.green('config')}  ${chalk.dim('→')}  Manage local settings and secrets\n`);
@@ -74,7 +73,7 @@ async function status() {
   const dbPath = path.resolve(process.cwd(), 'broccolidb.db');
   if (!fs.existsSync(dbPath)) {
     console.log(
-      chalk.red(`✘ Error: Database not found. Run ${chalk.bold('npx broccolidb init')} first.`),
+      chalk.red(`✘ Error: Database not found. Run ${chalk.bold('npx broccolidb init')} first.`)
     );
     return;
   }
@@ -113,12 +112,12 @@ async function status() {
     console.log(`${chalk.bold.white('REPOSITORY STATUS')}`);
     console.log(`  ${chalk.bold('Path:')}           ${chalk.dim(process.cwd())}`);
     console.log(
-      `  ${chalk.bold('Database:')}       ${chalk.cyan('broccolidb.db')} ${chalk.dim(`(${totalSize}MB)`)}`,
+      `  ${chalk.bold('Database:')}       ${chalk.cyan('broccolidb.db')} ${chalk.dim(`(${totalSize}MB)`)}`
     );
     console.log(`  ${chalk.bold('Embeddings:')}     ${embeddingStatus}`);
     if (!apiKey) {
       console.log(
-        `  ${chalk.dim('TIP: Use `npx broccolidb config wizard` to enable semantic search.')}`,
+        `  ${chalk.dim('TIP: Use `npx broccolidb config wizard` to enable semantic search.')}`
       );
     }
     console.log();
@@ -127,7 +126,7 @@ async function status() {
     console.log(`  ${chalk.bold('Nodes:')}          ${chalk.green(nodes.length)}`);
     console.log(`  ${chalk.bold('Edges:')}          ${chalk.green(edgesCount)}`);
     console.log(
-      `  ${chalk.bold('Hub Count:')}      ${chalk.green(hubNodes)} ${chalk.dim('(Highly connected files)')}`,
+      `  ${chalk.bold('Hub Count:')}      ${chalk.green(hubNodes)} ${chalk.dim('(Highly connected files)')}`
     );
     console.log();
 
@@ -136,7 +135,7 @@ async function status() {
       const topHubs = [...nodes].sort((a, b) => (b.hubScore || 0) - (a.hubScore || 0)).slice(0, 5);
       topHubs.forEach((h) => {
         console.log(
-          `  ${chalk.dim('•')} ${chalk.bold(h.id.padEnd(20))} ${chalk.dim('score:')} ${chalk.yellow(h.hubScore)}`,
+          `  ${chalk.dim('•')} ${chalk.bold(h.id.padEnd(20))} ${chalk.dim('score:')} ${chalk.yellow(h.hubScore)}`
         );
       });
     }
@@ -165,7 +164,7 @@ async function config() {
       layer: 'infrastructure',
     });
     console.log(
-      `${chalk.green('✅')} ${chalk.bold('Saved')} ${chalk.cyan(key)} ${chalk.dim('→')} ${key.includes('key') ? chalk.dim('********') : chalk.white(value)}`,
+      `${chalk.green('✅')} ${chalk.bold('Saved')} ${chalk.cyan(key)} ${chalk.dim('→')} ${key.includes('key') ? chalk.dim('********') : chalk.white(value)}`
     );
   } else if (subCommand === 'get' && key) {
     const row = await pool.selectOne('settings', [{ column: 'key', value: key }]);
@@ -218,16 +217,16 @@ async function init() {
     if (!content.includes('broccolidb.db')) {
       fs.appendFileSync(
         gitignorePath,
-        '\n# BroccoliDB\nbroccolidb.db\nbroccolidb.db-wal\nbroccolidb.db-shm\n',
+        '\n# BroccoliDB\nbroccolidb.db\nbroccolidb.db-wal\nbroccolidb.db-shm\n'
       );
       spinner.info(
-        `Automatically added ${chalk.cyan('broccolidb.db')} to ${chalk.bold('.gitignore')}`,
+        `Automatically added ${chalk.cyan('broccolidb.db')} to ${chalk.bold('.gitignore')}`
       );
     }
   } else {
     fs.writeFileSync(
       gitignorePath,
-      '# BroccoliDB\nbroccolidb.db\nbroccolidb.db-wal\nbroccolidb.db-shm\n',
+      '# BroccoliDB\nbroccolidb.db\nbroccolidb.db-wal\nbroccolidb.db-shm\n'
     );
     spinner.info(`Created ${chalk.bold('.gitignore')} with ${chalk.cyan('broccolidb.db')}`);
   }
@@ -267,7 +266,7 @@ async function init() {
       console.log(`\n${chalk.green('✅')} ${chalk.dim('Key persisted to local database.')}\n`);
     } else {
       console.log(
-        `\n${chalk.red('✘')} ${chalk.bold('Setup aborted.')} AI features will be disabled.`,
+        `\n${chalk.red('✘')} ${chalk.bold('Setup aborted.')} AI features will be disabled.`
       );
       process.exit(1);
     }
@@ -294,7 +293,7 @@ async function init() {
   if (claudeConfigPath) {
     console.log(`\n${chalk.bold.white('SEAMLESS INTEGRATION')}`);
     const answer = await rl.question(
-      `${chalk.green('?')} ${chalk.bold('Automatically add BroccoliDB to Claude Desktop?') + chalk.dim(' (Y/n)')} `,
+      `${chalk.green('?')} ${chalk.bold('Automatically add BroccoliDB to Claude Desktop?') + chalk.dim(' (Y/n)')} `
     );
 
     if (answer.toLowerCase() !== 'n') {
@@ -315,7 +314,7 @@ async function init() {
 
         fs.writeFileSync(claudeConfigPath, JSON.stringify(config, null, 2));
         console.log(
-          `${chalk.green('✅')} ${chalk.bold('Integrated!')} BroccoliDB added to ${chalk.dim(claudeConfigPath)}\n`,
+          `${chalk.green('✅')} ${chalk.bold('Integrated!')} BroccoliDB added to ${chalk.dim(claudeConfigPath)}\n`
         );
       } catch (_e: unknown) {
         const error = _e instanceof Error ? _e.message : String(_e);
@@ -370,7 +369,7 @@ async function init() {
   rl.close();
 
   console.log(
-    `\n${chalk.bold.green('✨ SUCCESS')} ${chalk.white('BroccoliDB is ready for use.')}\n`,
+    `\n${chalk.bold.green('✨ SUCCESS')} ${chalk.white('BroccoliDB is ready for use.')}\n`
   );
 
   console.log(`${chalk.bold.white('MANUAL CONFIGURATION')}`);
@@ -387,7 +386,7 @@ async function init() {
       },
     },
     null,
-    2,
+    2
   );
 
   console.log(chalk.bgGray.black(`\n${configBlock}\n`));
@@ -408,7 +407,7 @@ function getClaudeConfigPath(): string | null {
       'Library',
       'Application Support',
       'Claude',
-      'claude_desktop_config.json',
+      'claude_desktop_config.json'
     );
   } else if (process.platform === 'win32') {
     configPath = path.join(process.env.APPDATA || '', 'Claude', 'claude_desktop_config.json');
@@ -421,7 +420,7 @@ async function serve() {
   const dbPath = path.resolve(process.cwd(), 'broccolidb.db');
   if (!fs.existsSync(dbPath)) {
     console.error(
-      chalk.red(`✘ Error: Database not found. Run ${chalk.bold('npx broccolidb init')} first.`),
+      chalk.red(`✘ Error: Database not found. Run ${chalk.bold('npx broccolidb init')} first.`)
     );
     process.exit(1);
   }

@@ -149,7 +149,7 @@ export class Repository {
   constructor(
     dbOrConnection: BufferedDbPool | Connection,
     basePathOrRepoId: string,
-    agentContext?: any,
+    agentContext?: any
   ) {
     this.agentContext = agentContext || null;
     this.nodeCache = new LRUCache<string, MemoryNode>(1000);
@@ -186,7 +186,7 @@ export class Repository {
     newHead: string,
     author: string,
     operation: RefLogEntry['operation'],
-    message: string,
+    message: string
   ): Promise<void> {
     const id = crypto.randomUUID();
     const entry: RefLogEntry = {
@@ -206,7 +206,7 @@ export class Repository {
       layer: 'infrastructure',
     });
     console.log(
-      `[AgentGit][RefLog] ${operation.toUpperCase()} on '${ref}': ${message} (${newHead.substring(0, 7)})`,
+      `[AgentGit][RefLog] ${operation.toUpperCase()} on '${ref}': ${message} (${newHead.substring(0, 7)})`
     );
   }
 
@@ -226,7 +226,7 @@ export class Repository {
       {
         orderBy: { column: 'timestamp', direction: 'desc' },
         limit: 1000,
-      },
+      }
     );
 
     const index = rows.findIndex((r) => r.newHead === commitId);
@@ -244,7 +244,7 @@ export class Repository {
       undefined,
       {
         limit: 5000,
-      },
+      }
     );
 
     const relevantCommits = rows.filter((r) => (r.message || '').includes(path));
@@ -269,7 +269,7 @@ export class Repository {
       undefined,
       {
         limit: 5000,
-      },
+      }
     );
     return rows.filter((r) => (r.message || '').includes(path)).length;
   }
@@ -324,7 +324,7 @@ export class Repository {
     if (!node) {
       throw new AgentGitError(
         `Node '${nodeId}' not found in repo '${this.basePath}'`,
-        'NODE_NOT_FOUND',
+        'NODE_NOT_FOUND'
       );
     }
     const data = {
@@ -383,7 +383,7 @@ export class Repository {
   async createBranch(
     name: string,
     fromBranchOrNode?: string,
-    options: { isEphemeral?: boolean; expiresAt?: number } = {},
+    options: { isEphemeral?: boolean; expiresAt?: number } = {}
   ): Promise<void> {
     let headNodeId = '';
     if (fromBranchOrNode) {
@@ -461,7 +461,7 @@ export class Repository {
       usage?: Usage;
       metadata?: Record<string, any>;
       decisionIds?: string[];
-    } = {},
+    } = {}
   ): Promise<string> {
     return executor.execute(`commit:${branchName}`, async () => {
       return TaskMutex.runExclusive(`branch:${this.basePath}:${branchName}`, async () => {
@@ -486,7 +486,7 @@ export class Repository {
               if (reports.length > 0) {
                 throw new AgentGitError(
                   `Reasoning commit blocked: High-confidence logical contradiction detected.`,
-                  'REASONING_CONFLICT',
+                  'REASONING_CONFLICT'
                 );
               }
             }
@@ -500,7 +500,7 @@ export class Repository {
             author,
             message,
             options,
-            agentId,
+            agentId
           );
           await this.db.commitWork(agentId);
         } catch (e) {
@@ -524,7 +524,7 @@ export class Repository {
     author: string,
     message: string,
     data: Record<string, any>,
-    options: { usage?: Usage } = {},
+    options: { usage?: Usage } = {}
   ) {
     // 1. Offload Telemetry to memory queue (batched flush later)
     if (options.usage) {
@@ -561,7 +561,7 @@ export class Repository {
       metadata?: Record<string, any>;
       decisionIds?: string[];
     } = {},
-    agentId?: string,
+    agentId?: string
   ): Promise<void> {
     const branchDoc = await this.db.selectOne(
       'branches',
@@ -569,7 +569,7 @@ export class Repository {
         { column: 'repoPath', value: this.basePath },
         { column: 'name', value: branchName },
       ],
-      agentId,
+      agentId
     );
 
     if (!branchDoc) {
@@ -627,7 +627,7 @@ export class Repository {
               const audit = await this.agentContext.checkConstitutionalViolation(
                 path,
                 fileItem.content,
-                rule.content,
+                rule.content
               );
               if (audit.violated) {
                 const msg = `Constitutional violation in ${path}: ${audit.reason}`;
@@ -666,7 +666,7 @@ export class Repository {
         values: newNode,
         layer: 'domain',
       },
-      agentId,
+      agentId
     );
 
     await this.db.push(
@@ -680,7 +680,7 @@ export class Repository {
         values: { head: nodeId },
         layer: 'domain',
       },
-      agentId,
+      agentId
     );
 
     // Memory Cache invalidation/warming
@@ -702,7 +702,7 @@ export class Repository {
 
   async checkout(
     branchOrRef: string,
-    options: { resolveTree?: boolean } = { resolveTree: true },
+    options: { resolveTree?: boolean } = { resolveTree: true }
   ): Promise<MemoryNode | null> {
     try {
       const nodeId = await this.resolveRef(branchOrRef);
@@ -711,7 +711,7 @@ export class Repository {
       // Resolve full tree if this is a diff or hierarchical node
       if (options.resolveTree && (!node.tree || node.metadata?.isHierarchical)) {
         console.log(
-          `[AgentGit][Repo] Resolving tree for node ${nodeId.substring(0, 7)} (${node.metadata?.isHierarchical ? 'Merkle' : 'Flat'})`,
+          `[AgentGit][Repo] Resolving tree for node ${nodeId.substring(0, 7)} (${node.metadata?.isHierarchical ? 'Merkle' : 'Flat'})`
         );
         node.tree = await this.resolveTree(node);
       }
@@ -761,7 +761,7 @@ export class Repository {
   public async writeTree(
     _transaction: any,
     entries: Record<string, TreeEntry>,
-    agentId?: string,
+    agentId?: string
   ): Promise<string> {
     const hash = this.treeHash(entries);
     const snapshotObj = { id: hash, entries };
@@ -782,7 +782,7 @@ export class Repository {
         },
         layer: 'domain',
       },
-      agentId,
+      agentId
     );
 
     this.rawTreeCache.set(hash, snapshotObj);
@@ -885,7 +885,7 @@ export class Repository {
     hash: string,
     prefix: string,
     result: Record<string, string>,
-    depth: number = 0,
+    depth: number = 0
   ): Promise<void> {
     if (depth > 100) {
       console.warn(`[AgentGit] Tree traversal depth limit exceeded at: ${prefix}`);
@@ -904,7 +904,7 @@ export class Repository {
         } else if (entry.type === 'subrepo') {
           result[key] = `REPO:${entry.hash}`;
         }
-      }),
+      })
     );
   }
 
@@ -984,7 +984,7 @@ export class Repository {
           targetBranch,
           { ...mergedData, tree: mergedTree },
           author,
-          `Merge branch '${sourceBranch}' (no LCA)`,
+          `Merge branch '${sourceBranch}' (no LCA)`
         );
         await this.recordRefLog(
           targetBranch,
@@ -992,7 +992,7 @@ export class Repository {
           res,
           author,
           'merge',
-          `Merge ${sourceBranch}`,
+          `Merge ${sourceBranch}`
         );
         return res;
       }
@@ -1013,10 +1013,10 @@ export class Repository {
         const result = await this.db.runTransaction(async (agentId) => {
           return this.mergeTrees(
             null,
-            baseNode.metadata!.treeHash!,
-            sourceNode.metadata!.treeHash!,
-            targetNode.metadata!.treeHash!,
-            agentId,
+            baseNode.metadata?.treeHash!,
+            sourceNode.metadata?.treeHash!,
+            targetNode.metadata?.treeHash!,
+            agentId
           );
         });
 
@@ -1024,7 +1024,7 @@ export class Repository {
           throw new AgentGitError(
             `Merge conflicts in: ${result.conflicts.join(', ')}`,
             'MERGE_CONFLICT',
-            result.conflicts,
+            result.conflicts
           );
         }
         newTreeHash = result.hash;
@@ -1038,7 +1038,7 @@ export class Repository {
           throw new AgentGitError(
             `Merge conflicts in: ${conflictResult.conflicts.join(', ')}`,
             'MERGE_CONFLICT',
-            conflictResult.conflicts,
+            conflictResult.conflicts
           );
         }
         if (conflictResult.reasoningConflicts && conflictResult.reasoningConflicts.length > 0) {
@@ -1046,7 +1046,7 @@ export class Repository {
           if (highConf) {
             throw new AgentGitError(
               `High-confidence reasoning contradiction detected between ${highConf.nodeId} and ${highConf.conflictingNodeId}`,
-              'REASONING_CONFLICT',
+              'REASONING_CONFLICT'
             );
           }
         }
@@ -1064,7 +1064,7 @@ export class Repository {
             lca: lcaId,
             ...(newTreeHash ? { treeHash: newTreeHash, isHierarchical: true } : {}),
           },
-        },
+        }
       );
 
       await this.recordRefLog(
@@ -1073,7 +1073,7 @@ export class Repository {
         resultNodeId,
         author,
         'merge',
-        `Merge ${sourceBranch}`,
+        `Merge ${sourceBranch}`
       );
       return resultNodeId;
     });
@@ -1087,7 +1087,7 @@ export class Repository {
     sourceBranch: string,
     targetBranch: string,
     author: string,
-    message?: string,
+    message?: string
   ): Promise<string | null> {
     const sourceHead = await this.resolveRef(sourceBranch);
     const resId = await this.merge(sourceBranch, targetBranch, author);
@@ -1150,7 +1150,7 @@ export class Repository {
    */
   async getReasoningDiff(
     refA: string,
-    refB: string,
+    refB: string
   ): Promise<{
     added: MemoryNode[];
     removed: MemoryNode[];
@@ -1188,7 +1188,7 @@ export class Repository {
    */
   async simulateMerge(
     sourceRef: string,
-    targetRef: string,
+    targetRef: string
   ): Promise<ConflictResult & { lcaId: string | null; affectedPaths: string[] }> {
     const sourceHead = await this.resolveRef(sourceRef);
     const targetHead = await this.resolveRef(targetRef);
@@ -1216,7 +1216,7 @@ export class Repository {
       // O(log N) Affected Path detection via hash diffing
       affectedPaths = await this.calculateAffectedPaths(
         baseNode.metadata.treeHash!,
-        sourceNode.metadata.treeHash!,
+        sourceNode.metadata.treeHash!
       );
     } else {
       const sourceTree = sourceNode.tree || (await this.resolveTree(sourceNode));
@@ -1237,7 +1237,7 @@ export class Repository {
   private async calculateAffectedPaths(
     hashA: string,
     hashB: string,
-    prefix: string = '',
+    prefix: string = ''
   ): Promise<string[]> {
     if (hashA === hashB) return [];
 
@@ -1277,7 +1277,7 @@ export class Repository {
     baseHash: string,
     sourceHash: string,
     targetHash: string,
-    agentId?: string,
+    agentId?: string
   ): Promise<{ hash: string; conflicts: string[] }> {
     if (sourceHash === targetHash) return { hash: sourceHash, conflicts: [] };
     if (sourceHash === baseHash) return { hash: targetHash, conflicts: [] };
@@ -1321,7 +1321,7 @@ export class Repository {
           (res) => {
             mergedEntries[name] = { type: 'tree', hash: res.hash };
             allConflicts = allConflicts.concat(res.conflicts.map((c) => `${name}/${c}`));
-          },
+          }
         );
         subTreePromises.push(promise);
       } else {
@@ -1338,7 +1338,7 @@ export class Repository {
   private async calculateMerge(
     baseId: string,
     sourceId: string,
-    targetId: string,
+    targetId: string
   ): Promise<ConflictResult> {
     const baseNode = await this.getNode(baseId);
     const sourceNode = await this.getNode(sourceId);
@@ -1354,10 +1354,10 @@ export class Repository {
       try {
         const result = await this.mergeTrees(
           null,
-          baseNode.metadata!.treeHash!,
-          sourceNode.metadata!.treeHash!,
-          targetNode.metadata!.treeHash!,
-          agentId,
+          baseNode.metadata?.treeHash!,
+          sourceNode.metadata?.treeHash!,
+          targetNode.metadata?.treeHash!,
+          agentId
         );
         await this.db.commitWork(agentId);
         const mergedTree: Record<string, string> = {};
@@ -1441,7 +1441,7 @@ export class Repository {
     branchName: string,
     summaryData: any,
     author: string,
-    message: string = 'Memory Compaction',
+    message: string = 'Memory Compaction'
   ): Promise<string> {
     return this.commit(branchName, summaryData, author, message, { type: 'summary' });
   }
@@ -1510,7 +1510,7 @@ export class Repository {
         `Apply stash: ${stash.label}`,
         {
           metadata: { stashId, originalBranch: stash.branch },
-        },
+        }
       );
       await this.db.push({
         type: 'delete',
@@ -1538,7 +1538,7 @@ export class Repository {
     branch: string,
     targetRef: string,
     author: string,
-    options: { mode?: 'hard' | 'soft'; usage?: Usage; metadata?: Record<string, any> } = {},
+    options: { mode?: 'hard' | 'soft'; usage?: Usage; metadata?: Record<string, any> } = {}
   ): Promise<void> {
     return executor.execute(`reset:${branch}`, async () => {
       const targetNodeId = await this.resolveRef(targetRef);
@@ -1608,7 +1608,7 @@ export class Repository {
         finalNodeId,
         author,
         'reset',
-        `Reset to ${targetRef} (${mode} mode)`,
+        `Reset to ${targetRef} (${mode} mode)`
       );
     });
   }
@@ -1679,7 +1679,7 @@ export class Repository {
           ...stashes.map((d) => d.nodeId),
           ...reflog.map((d) => d.newHead),
           ...reflog.map((d) => d.oldHead),
-        ].filter((h): h is string => h !== null),
+        ].filter((h): h is string => h !== null)
       );
 
       for (const nodeId of heads) {
@@ -1731,7 +1731,7 @@ export class Repository {
   private async markReachable(
     startNodeId: string,
     visitedNodes: Set<string>,
-    visitedTrees: Set<string>,
+    visitedTrees: Set<string>
   ): Promise<void> {
     let currentId: string | null = startNodeId;
     while (currentId) {
@@ -1751,7 +1751,7 @@ export class Repository {
   private async markTreeReachable(
     treeHash: string,
     visitedTrees: Set<string>,
-    depth: number = 0,
+    depth: number = 0
   ): Promise<void> {
     if (visitedTrees.has(treeHash) || depth > 100) return;
     visitedTrees.add(treeHash);
@@ -1777,7 +1777,7 @@ export class Repository {
         {
           type: sourceNode.type,
           metadata: { ...sourceNode.metadata, cherryPickedFrom: nodeId },
-        },
+        }
       );
     });
   }
@@ -1914,7 +1914,7 @@ export class Repository {
         newHeadId,
         author,
         'rebase',
-        `Rebase onto ${ontoRef} (${ontoNodeId})`,
+        `Rebase onto ${ontoRef} (${ontoNodeId})`
       );
       return newHeadId;
     });
@@ -1934,7 +1934,7 @@ export class Repository {
       if (history.length < count)
         throw new AgentGitError(
           `Not enough commits to squash (requested ${count}, found ${history.length})`,
-          'NOT_ENOUGH_HISTORY',
+          'NOT_ENOUGH_HISTORY'
         );
 
       const nodeId = this.generateNodeId();
@@ -1951,7 +1951,7 @@ export class Repository {
           {
             type: 'snapshot',
           },
-          agentId,
+          agentId
         );
         await this.db.commitWork(agentId);
       } catch (e) {
@@ -1965,7 +1965,7 @@ export class Repository {
         nodeId,
         author,
         'commit',
-        `Squash ${count} commits: ${message}`,
+        `Squash ${count} commits: ${message}`
       );
       return nodeId;
     });
@@ -1985,7 +1985,7 @@ export class Repository {
           ({
             ...r,
             timestamp: Number(r.timestamp),
-          }) as unknown as RefLogEntry,
+          }) as unknown as RefLogEntry
       )
       .sort((a, b) => b.timestamp - a.timestamp);
 
@@ -2034,7 +2034,7 @@ export class Repository {
 
   registerHook(
     event: 'pre-commit' | 'post-commit' | 'post-merge',
-    callback: (data: any) => Promise<void>,
+    callback: (data: any) => Promise<void>
   ) {
     if (!this.hooks[event]) this.hooks[event] = [];
     this.hooks[event].push(callback);
@@ -2054,7 +2054,7 @@ export class Repository {
   async bisect(
     badRef: string,
     goodRef: string,
-    testFn: (node: MemoryNode) => Promise<boolean>,
+    testFn: (node: MemoryNode) => Promise<boolean>
   ): Promise<MemoryNode> {
     const badId = await this.resolveRef(badRef);
     const goodId = await this.resolveRef(goodRef);
@@ -2137,7 +2137,7 @@ export class Repository {
             values: { ...(fdata as any), id: fid },
             layer: 'infrastructure',
           },
-          agentId,
+          agentId
         );
       }
 
@@ -2157,7 +2157,7 @@ export class Repository {
             },
             layer: 'domain',
           },
-          agentId,
+          agentId
         );
       }
 
@@ -2168,7 +2168,7 @@ export class Repository {
           { column: 'repoPath', value: this.basePath },
           { column: 'name', value: branch },
         ],
-        agentId,
+        agentId
       );
       if (!branchRef) throw new AgentGitError(`Branch ${branch} not found`, 'BRANCH_NOT_FOUND');
 
@@ -2183,7 +2183,7 @@ export class Repository {
           values: { head: patch.targetNodeId },
           layer: 'domain',
         },
-        agentId,
+        agentId
       );
 
       await this.db.commitWork(agentId);
@@ -2193,7 +2193,7 @@ export class Repository {
         patch.targetNodeId,
         author,
         'commit',
-        `Applied patch ${patch.targetNodeId}`,
+        `Applied patch ${patch.targetNodeId}`
       );
       return patch.targetNodeId;
     } catch (e) {
@@ -2211,7 +2211,7 @@ export class Repository {
   async getContextGraph(
     branch: string,
     filePath: string,
-    limit: number = 50,
+    limit: number = 50
   ): Promise<{ path: string; weight: number }[]> {
     const commits = await this.history(branch, 200); // Analyze last 200 commits for correlations
     const normalizedTarget = filePath.replace(/^\/+/, '').replace(/\/\/+/g, '/');
@@ -2261,7 +2261,7 @@ export class Repository {
       if (!targetEntry) {
         throw new AgentGitError(
           `No reflog entry found before ${targetTime.toISOString()}`,
-          'NOT_ENOUGH_HISTORY',
+          'NOT_ENOUGH_HISTORY'
         );
       }
 
@@ -2274,7 +2274,7 @@ export class Repository {
         safeNodeId,
         author,
         'reset',
-        `Time Travel to ${targetTime.toISOString()} (${safeNodeId})`,
+        `Time Travel to ${targetTime.toISOString()} (${safeNodeId})`
       );
 
       return safeNodeId;
@@ -2307,7 +2307,7 @@ export class Repository {
     if (!found)
       throw new AgentGitError(
         `Base reference '${baseId}' not found in head's history`,
-        'NOT_ENOUGH_HISTORY',
+        'NOT_ENOUGH_HISTORY'
       );
 
     // path is now head -> ... -> base+1 -> base
@@ -2375,7 +2375,7 @@ ${messages.join('\n')}`;
       if (!lastKnownDocId) {
         throw new AgentGitError(
           `Cannot recover '${normalizedPath}': file never existed in recent history.`,
-          'FILE_NOT_FOUND',
+          'FILE_NOT_FOUND'
         );
       }
 
@@ -2403,7 +2403,7 @@ ${messages.join('\n')}`;
         `Recovered ${normalizedPath} from commit ${lastKnownCommit}`,
         {
           metadata: { treeOp: 'recover', path: normalizedPath, recoveredFrom: lastKnownCommit },
-        },
+        }
       );
     });
   }

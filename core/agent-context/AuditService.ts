@@ -7,13 +7,13 @@ export class AuditService {
   constructor(
     private ctx: ServiceContext,
     private graph: GraphService,
-    private reasoning: ReasoningService,
+    private reasoning: ReasoningService
   ) {}
 
   async checkConstitutionalViolation(
     path: string,
     code: string,
-    ruleContent: string,
+    ruleContent: string
   ): Promise<{ violated: boolean; reason?: string }> {
     if (!this.ctx.aiService?.isAvailable()) {
       return { violated: false };
@@ -46,7 +46,7 @@ export class AuditService {
   async addLogicalConstraint(
     pathPattern: string,
     knowledgeId: string,
-    severity: 'blocking' | 'warning' = 'blocking',
+    severity: 'blocking' | 'warning' = 'blocking'
   ): Promise<void> {
     const id = crypto.randomUUID();
     await this.ctx.push({

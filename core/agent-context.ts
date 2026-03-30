@@ -18,7 +18,6 @@ export type {
 
 import type {
   AgentBundle,
-  AgentProfile,
   ImpactReport,
   KnowledgeBaseItem,
   Pedigree,
@@ -50,7 +49,7 @@ export class AgentContext {
     workspace: Workspace,
     db?: BufferedDbPool,
     userId?: string,
-    _profile?: { agentId: string; name: string },
+    _profile?: { agentId: string; name: string }
   ) {
     this._db = db || workspace.getDb();
     this.userId = (userId || workspace.userId).trim();
@@ -74,7 +73,7 @@ export class AgentContext {
     this._auditService = new AuditService(
       this._serviceContext,
       this._graphService,
-      this._reasoningService,
+      this._reasoningService
     );
     this._spiderService = new SpiderService(this._serviceContext);
   }
@@ -122,7 +121,7 @@ export class AgentContext {
     targetId: string,
     annotation: string,
     agentId?: string,
-    metadata: Record<string, any> = {},
+    metadata: Record<string, any> = {}
   ) {
     const targetNode = await this.getKnowledge(targetId);
     const edges = [...(targetNode.edges || [])];
@@ -134,7 +133,7 @@ export class AgentContext {
       {
         tags: ['annotation'],
         metadata: { ...metadata, targetId, agentId },
-      },
+      }
     );
 
     edges.push({ targetId: annotationId, type: 'references' });
@@ -153,7 +152,7 @@ export class AgentContext {
       confidence?: number;
       expiresAt?: number;
       metadata?: Record<string, unknown>;
-    } = {},
+    } = {}
   ) {
     return this._graphService.addKnowledge(kbId, type, content, options);
   }
@@ -207,7 +206,7 @@ export class AgentContext {
   async addLogicalConstraint(
     pathPattern: string,
     knowledgeId: string,
-    severity: 'blocking' | 'warning' = 'blocking',
+    severity: 'blocking' | 'warning' = 'blocking'
   ) {
     return this._auditService.addLogicalConstraint(pathPattern, knowledgeId, severity);
   }
@@ -232,7 +231,7 @@ export class AgentContext {
     taskId: string,
     agentId: string,
     description: string,
-    linkedKnowledgeIds?: string[],
+    linkedKnowledgeIds?: string[]
   ) {
     return this._taskService.spawnTask(taskId, agentId, description, linkedKnowledgeIds);
   }
@@ -266,7 +265,7 @@ export class AgentContext {
       {
         orderBy: { column: 'hubScore', direction: 'desc' },
         limit: limit ?? 10,
-      },
+      }
     );
     return rows.map((r) => ({ kbId: r.id as string, score: (r.hubScore as number) || 0 }));
   }
@@ -276,7 +275,7 @@ export class AgentContext {
 
   // ─── SEARCH & VERIFICATION ───
   public async verifyKnowledgeBatch(
-    itemIds: string[],
+    itemIds: string[]
   ): Promise<Map<string, { isValid: boolean; confidence: number }>> {
     const results = new Map<string, { isValid: boolean; confidence: number }>();
     for (const id of itemIds) {
@@ -294,7 +293,7 @@ export class AgentContext {
     tags?: string[],
     limit = 20,
     _queryEmbedding?: number[],
-    options: { augmentWithGraph?: boolean; skipVerification?: boolean } = {},
+    options: { augmentWithGraph?: boolean; skipVerification?: boolean } = {}
   ): Promise<KnowledgeBaseItem[]> {
     const results = await this._graphService.traverseGraph('HEAD', limit, {
       direction: 'both',
@@ -302,7 +301,7 @@ export class AgentContext {
     });
 
     let filtered = results.filter((r) =>
-      (r.content || '').toLowerCase().includes(query.toLowerCase()),
+      (r.content || '').toLowerCase().includes(query.toLowerCase())
     );
     if (tags && tags.length > 0) {
       filtered = filtered.filter((r) => tags.every((t) => (r.tags || []).includes(t)));
@@ -370,7 +369,7 @@ export class AgentContext {
       {
         orderBy: { column: 'createdAt', direction: 'desc' },
         limit: 10,
-      },
+      }
     );
     const recentKnowledge =
       recent.length > 0

@@ -19,6 +19,9 @@
     "build": "tsc",
     "clean": "rm -rf dist && find . -name '*.d.ts' -not -path './node_modules/*' -delete && find . -name '*.d.ts.map' -not -path './node_modules/*' -delete",
     "prepublishOnly": "npm run clean && npm run build",
+    "format": "biome format --write .",
+    "lint": "biome lint . && eslint .",
+    "check": "biome check --write . && eslint .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -52,9 +55,15 @@
     "ts-morph": "^27.0.2"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.10",
+    "@eslint/js": "^9.39.4",
     "@types/better-sqlite3": "^7.6.13",
+    "@types/eslint__js": "^8.42.3",
     "@types/node": "^25.5.0",
+    "eslint": "^9.39.4",
+    "globals": "^17.4.0",
     "tsx": "^4.21.0",
-    "typescript": "^6.0.2"
+    "typescript": "^6.0.2",
+    "typescript-eslint": "^8.58.0"
   }
 }

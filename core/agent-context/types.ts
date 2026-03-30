@@ -101,7 +101,7 @@ export interface ServiceContext {
     tags?: string[],
     limit?: number,
     queryEmbedding?: number[],
-    options?: { augmentWithGraph?: boolean; skipVerification?: boolean },
+    options?: { augmentWithGraph?: boolean; skipVerification?: boolean }
   ) => Promise<KnowledgeBaseItem[]>;
   updateTaskStatus: (taskId: string, status: any, result?: any) => Promise<void>;
 }
@@ -113,14 +113,14 @@ export interface IAgentContext {
     tags?: string[],
     limit?: number,
     queryEmbedding?: number[],
-    options?: any,
+    options?: any
   ): Promise<KnowledgeBaseItem[]>;
   flush(): Promise<void>;
   annotateKnowledge(
     targetId: string,
     annotation: string,
     agentId?: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, any>
   ): Promise<void>;
 }
 

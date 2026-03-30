@@ -1,7 +1,7 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import Database from 'better-sqlite3';
-import * as fs from 'fs';
 import { CompiledQuery, Kysely, SqliteDialect } from 'kysely';
-import * as path from 'path';
 
 export interface Schema {
   users: {
@@ -233,7 +233,7 @@ export async function getDb(): Promise<Kysely<Schema>> {
     }),
   });
 
-  const execute = (q: string) => _db!.executeQuery(CompiledQuery.raw(q));
+  const execute = (q: string) => _db?.executeQuery(CompiledQuery.raw(q));
 
   // Performance Tweaks (WAL Mode)
   await execute('PRAGMA journal_mode = WAL;');
@@ -450,7 +450,7 @@ export async function getDb(): Promise<Kysely<Schema>> {
 
   await execute(`CREATE INDEX IF NOT EXISTS idx_logical_repo ON logical_constraints(repoPath)`);
   await execute(
-    `CREATE INDEX IF NOT EXISTS idx_logical_pattern ON logical_constraints(pathPattern)`,
+    `CREATE INDEX IF NOT EXISTS idx_logical_pattern ON logical_constraints(pathPattern)`
   );
 
   await execute(`CREATE TABLE IF NOT EXISTS knowledge_edges (
@@ -494,7 +494,9 @@ export async function getDb(): Promise<Kysely<Schema>> {
     updatedAt BIGINT
   )`);
 
-  await execute(`CREATE INDEX IF NOT EXISTS idx_poll_order ON queue_jobs(status, runAt, priority DESC, createdAt ASC)`);
+  await execute(
+    `CREATE INDEX IF NOT EXISTS idx_poll_order ON queue_jobs(status, runAt, priority DESC, createdAt ASC)`
+  );
   await execute(`CREATE INDEX IF NOT EXISTS idx_cleanup ON queue_jobs(status, updatedAt)`);
 
   await execute(`CREATE TABLE IF NOT EXISTS queue_settings (

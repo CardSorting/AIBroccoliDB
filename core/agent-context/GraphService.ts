@@ -20,7 +20,7 @@ export class GraphService {
       confidence?: number;
       expiresAt?: number;
       metadata?: Record<string, any>;
-    } = {},
+    } = {}
   ): Promise<string> {
     const results = await this.addKnowledgeBatch([{ kbId, type, content, options }]);
     return results[0]!;
@@ -39,7 +39,7 @@ export class GraphService {
         expiresAt?: number;
         metadata?: Record<string, any>;
       };
-    }[],
+    }[]
   ): Promise<string[]> {
     if (items.length === 0) return [];
 
@@ -116,7 +116,7 @@ export class GraphService {
           const referrer = await this.getKnowledge(inEdge.targetId);
           if (referrer) {
             const updatedEdges = (referrer.edges || []).map((e: GraphEdge) =>
-              e.targetId === sourceId ? { ...e, targetId } : e,
+              e.targetId === sourceId ? { ...e, targetId } : e
             );
             await this.updateKnowledge(inEdge.targetId, { edges: updatedEdges });
           }
@@ -286,7 +286,7 @@ export class GraphService {
   async traverseGraph(
     startId: string,
     maxDepth = 2,
-    filter?: TraversalFilter,
+    filter?: TraversalFilter
   ): Promise<KnowledgeBaseItem[]> {
     const visited = new Set<string>();
     const results: KnowledgeBaseItem[] = [];
@@ -307,7 +307,7 @@ export class GraphService {
           let edges = direction === 'inbound' ? node.inboundEdges : node.edges;
           if (direction === 'both') edges = [...(node.edges || []), ...(node.inboundEdges || [])];
 
-          if (filter?.edgeTypes) edges = edges.filter((e) => filter.edgeTypes!.includes(e.type));
+          if (filter?.edgeTypes) edges = edges.filter((e) => filter.edgeTypes?.includes(e.type));
           if (filter?.minWeight)
             edges = edges.filter((e) => (e.weight ?? 1.0) >= filter.minWeight!);
 
@@ -323,7 +323,7 @@ export class GraphService {
   }
 
   async getNodeCentrality(
-    kbId: string,
+    kbId: string
   ): Promise<{ kbId: string; inbound: number; outbound: number; totalDegree: number }> {
     const node = await this.getKnowledge(kbId);
     const inbound = (node.inboundEdges || []).length;
@@ -331,7 +331,7 @@ export class GraphService {
     return { kbId, inbound, outbound, totalDegree: inbound + outbound };
   }
 
-  private async _syncOutboundEdges(sourceId: string, edges: GraphEdge[]): Promise<void> {
+  private async _syncOutboundEdges(_sourceId: string, edges: GraphEdge[]): Promise<void> {
     for (const edge of edges) {
       await this.ctx.push({
         type: 'update',
@@ -343,7 +343,7 @@ export class GraphService {
     }
   }
 
-  private async _removeOutboundEdges(sourceId: string, edges: GraphEdge[]): Promise<void> {
+  private async _removeOutboundEdges(_sourceId: string, edges: GraphEdge[]): Promise<void> {
     for (const edge of edges) {
       await this.ctx.push({
         type: 'update',
@@ -358,7 +358,7 @@ export class GraphService {
   async extractSubgraph(
     rootId: string,
     maxDepth = 2,
-    filter?: TraversalFilter,
+    filter?: TraversalFilter
   ): Promise<{
     nodes: KnowledgeBaseItem[];
     edges: { sourceId: string; targetId: string; type: string; weight?: number }[];

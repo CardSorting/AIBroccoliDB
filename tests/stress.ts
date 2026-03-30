@@ -1,8 +1,7 @@
-import { dbPool } from '../infrastructure/db/BufferedDbPool.js';
-import { SqliteQueue } from '../infrastructure/queue/SqliteQueue.js';
-import { setDbPath } from '../infrastructure/db/Config.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { dbPool } from '../infrastructure/db/BufferedDbPool.js';
+import { setDbPath } from '../infrastructure/db/Config.js';
 
 const BENCH_DB = path.resolve(process.cwd(), 'stress.db');
 const TOTAL_OPS = 200000;
@@ -18,29 +17,31 @@ async function runStress() {
   setDbPath(BENCH_DB);
 
   const start = performance.now();
-  
+
   const tasks = [];
   for (let a = 0; a < AGENTS; a++) {
-    tasks.push((async () => {
-      for (let i = 0; i < OPS_PER_AGENT; i += 1000) {
-        const ops = [];
-        for (let j = 0; j < 1000; j++) {
-          ops.push({
-            type: 'insert' as const,
-            table: 'knowledge' as const,
-            values: {
-              id: `stress-${a}-${i + j}`,
-              userId: 'stress-user',
-              type: 'benchmark_data',
-              content: 'x'.repeat(100),
-              createdAt: Date.now(),
-            },
-            layer: 'infrastructure' as const,
-          });
+    tasks.push(
+      (async () => {
+        for (let i = 0; i < OPS_PER_AGENT; i += 1000) {
+          const ops = [];
+          for (let j = 0; j < 1000; j++) {
+            ops.push({
+              type: 'insert' as const,
+              table: 'knowledge' as const,
+              values: {
+                id: `stress-${a}-${i + j}`,
+                userId: 'stress-user',
+                type: 'benchmark_data',
+                content: 'x'.repeat(100),
+                createdAt: Date.now(),
+              },
+              layer: 'infrastructure' as const,
+            });
+          }
+          await dbPool.pushBatch(ops);
         }
-        await dbPool.pushBatch(ops);
-      }
-    })());
+      })()
+    );
   }
 
   await Promise.all(tasks);

@@ -8,7 +8,7 @@ import type { ContradictionReport, KnowledgeBaseItem, Pedigree, ServiceContext }
 export class ReasoningService {
   constructor(
     private ctx: ServiceContext,
-    private graph: GraphService,
+    private graph: GraphService
   ) {}
 
   /**
@@ -16,7 +16,7 @@ export class ReasoningService {
    */
   async detectContradictions(
     startIds: string | string[],
-    depth = 3,
+    depth = 3
   ): Promise<ContradictionReport[]> {
     const ids = Array.isArray(startIds) ? startIds : [startIds];
     const reports: ContradictionReport[] = [];
@@ -106,7 +106,7 @@ export class ReasoningService {
       pedigree.lineage.map((l) => ({
         content: l.content,
         type: l.type,
-      })),
+      }))
     );
   }
 
@@ -146,7 +146,7 @@ export class ReasoningService {
    * Incorporates git signals, evidence discounting, and adaptive calibration.
    */
   async verifySovereignty(
-    nodeId: string,
+    nodeId: string
   ): Promise<{ isValid: boolean; metrics: Record<string, unknown> | null }> {
     const node = await this.graph.getKnowledge(nodeId).catch(() => null);
     if (!node) return { isValid: false, metrics: null };
@@ -222,7 +222,7 @@ export class ReasoningService {
   }
 
   async selfHealGraph(
-    listAllFn: () => Promise<KnowledgeBaseItem[]>,
+    listAllFn: () => Promise<KnowledgeBaseItem[]>
   ): Promise<{ prunedNodes: string[]; prunedEdges: number }> {
     const allKnowledge = await listAllFn();
     const nodesToPrune: string[] = [];
@@ -263,7 +263,7 @@ export class ReasoningService {
    */
   async autoDiscoverRelationships(
     nodeId: string,
-    limit = 5,
+    limit = 5
   ): Promise<{ discovered: number; suggestions: string[] }> {
     const item = await this.graph.getKnowledge(nodeId);
     if (!this.ctx.aiService?.isAvailable()) return { discovered: 0, suggestions: [] };
@@ -281,7 +281,7 @@ export class ReasoningService {
 
       const relationship = await this.ctx.aiService.evaluateLogicRelationship(
         item.content,
-        candidate.content,
+        candidate.content
       );
       if (relationship !== 'neutral') {
         await this.graph.updateKnowledge(nodeId, {
@@ -315,7 +315,7 @@ export class ReasoningService {
       totalConfidence += item.confidence;
       contradictionCount += (item.edges || []).filter((e) => e.type === 'contradicts').length;
       supportCount += (item.edges || []).filter(
-        (e) => e.type === 'supports' || e.type === 'depends_on',
+        (e) => e.type === 'supports' || e.type === 'depends_on'
       ).length;
     }
 

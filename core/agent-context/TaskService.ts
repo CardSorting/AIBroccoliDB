@@ -11,14 +11,14 @@ import type {
 export class TaskService {
   constructor(
     private ctx: ServiceContext,
-    private graph: GraphService,
+    private graph: GraphService
   ) {}
 
   async registerAgent(
     agentId: string,
     name: string,
     role: string,
-    permissions: string[] = [],
+    permissions: string[] = []
   ): Promise<void> {
     await this.ctx.push(
       {
@@ -37,7 +37,7 @@ export class TaskService {
         },
         layer: 'domain',
       },
-      agentId,
+      agentId
     );
   }
 
@@ -54,7 +54,7 @@ export class TaskService {
         values: { lastActive: Date.now() },
         layer: 'infrastructure',
       },
-      agentId,
+      agentId
     );
     return {
       ...agent,
@@ -80,7 +80,7 @@ export class TaskService {
         },
         layer: 'infrastructure',
       },
-      agentId,
+      agentId
     );
   }
 
@@ -88,7 +88,7 @@ export class TaskService {
     taskId: string,
     agentId: string,
     description: string,
-    linkedKnowledgeIds?: string[],
+    linkedKnowledgeIds?: string[]
   ): Promise<void> {
     await this.ctx.push(
       {
@@ -106,7 +106,7 @@ export class TaskService {
         },
         layer: 'domain',
       },
-      agentId,
+      agentId
     );
   }
 
@@ -144,7 +144,7 @@ export class TaskService {
 
     if (task.linkedKnowledgeIds && task.linkedKnowledgeIds.length > 0) {
       const graphPromises = task.linkedKnowledgeIds.map((kbId) =>
-        this.graph.traverseGraph(kbId, 2),
+        this.graph.traverseGraph(kbId, 2)
       );
       const nestedResults = await Promise.all(graphPromises);
 

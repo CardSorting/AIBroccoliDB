@@ -274,7 +274,7 @@ export class AiService {
    */
   async summarizeText(text: string): Promise<string> {
     if (!text.trim()) return text;
-    const truncated = text.length > 200 ? text.substring(0, 200) + '...' : text;
+    const truncated = text.length > 200 ? `${text.substring(0, 200)}...` : text;
     return `[Local Summary] ${truncated}`;
   }
 
@@ -302,7 +302,7 @@ export class AiService {
    */
   async evaluateLogicRelationship(
     _textA: string,
-    _textB: string,
+    _textB: string
   ): Promise<'supports' | 'contradicts' | 'neutral'> {
     return 'neutral';
   }
@@ -312,7 +312,7 @@ export class AiService {
    */
   async explainReasoningChain(
     conclusion: string,
-    steps: { content: string; type: string }[],
+    steps: { content: string; type: string }[]
   ): Promise<string> {
     if (steps.length === 0) return 'No reasoning steps provided.';
     const stepsSummary = steps.map((s, i) => `${i + 1}. [${s.type}] ${s.content}`).join('\n');
@@ -326,7 +326,7 @@ export class AiService {
   async auditCodeAgainstRule(
     _path: string,
     _code: string,
-    _ruleContent: string,
+    _ruleContent: string
   ): Promise<{ violated: boolean; reason?: string }> {
     return { violated: false };
   }

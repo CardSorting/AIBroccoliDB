@@ -1,7 +1,6 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { type CallExpression, type ImportDeclaration, Project, SyntaxKind } from 'ts-morph';
-import { Logger } from '../../shared/services/Logger.js';
 import { getLayer, type Layer } from '../../utils/joy-zoning.js';
 
 export interface SpiderNode {
@@ -210,7 +209,7 @@ export class SpiderEngine {
         n.layer === 'ui' ||
         n.layer === 'core' ||
         n.path.includes('main.') ||
-        n.path.includes('index.'),
+        n.path.includes('index.')
     );
 
     const reachable = new Set<string>();

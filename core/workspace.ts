@@ -26,12 +26,12 @@ export class Workspace {
     dbOrConnection: BufferedDbPool | Connection,
     userId: string,
     workspaceId: string,
-    private taskId?: string,
+    private taskId?: string
   ) {
-    if (!userId || !userId.trim()) {
+    if (!userId?.trim()) {
       throw new AgentGitError('userId is required', 'INVALID_USER_ID');
     }
-    if (!workspaceId || !workspaceId.trim()) {
+    if (!workspaceId?.trim()) {
       throw new AgentGitError('workspaceId is required', 'INVALID_WORKSPACE_ID');
     }
     if (dbOrConnection instanceof Connection) {
@@ -238,7 +238,7 @@ export class Workspace {
     localRepoId: string,
     branch: string,
     remoteWs: Workspace,
-    remoteRepoId: string,
+    remoteRepoId: string
   ): Promise<void> {
     await executor.execute(`repo:push:${localRepoId}:${branch}`, async () => {
       const localRepo = await this.getRepo(localRepoId);
@@ -294,7 +294,7 @@ export class Workspace {
     localRepoId: string,
     branch: string,
     remoteWs: Workspace,
-    remoteRepoId: string,
+    remoteRepoId: string
   ): Promise<void> {
     await remoteWs.push(remoteRepoId, branch, this, localRepoId);
   }
@@ -302,7 +302,7 @@ export class Workspace {
   private async forkFromRemote(
     remoteWs: Workspace,
     remoteRepoId: string,
-    newRepoId: string,
+    newRepoId: string
   ): Promise<Repository> {
     const remoteRepo = await remoteWs.getRepo(remoteRepoId);
     const remotePath = remoteRepo.getBasePath();

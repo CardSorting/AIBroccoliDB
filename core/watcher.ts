@@ -1,6 +1,6 @@
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import * as chokidar from 'chokidar';
-import * as fs from 'fs/promises';
-import * as path from 'path';
 import { AgentGitError } from './errors.js';
 import type { Repository } from './repository.js';
 
@@ -13,7 +13,7 @@ export class LocalWatcher {
     private readonly repo: Repository,
     private readonly branch: string,
     private readonly localDirPath: string,
-    private readonly author: string = 'agent-watcher',
+    private readonly author: string = 'agent-watcher'
   ) {}
 
   public async start(): Promise<void> {

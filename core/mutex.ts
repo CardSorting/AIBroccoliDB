@@ -8,7 +8,7 @@ export class TaskMutex {
   static async runExclusive<T>(
     key: string,
     fn: () => Promise<T>,
-    timeoutMs: number = 60000,
+    timeoutMs: number = 60000
   ): Promise<T> {
     const previous = TaskMutex.locks.get(key) || Promise.resolve();
 
@@ -19,14 +19,14 @@ export class TaskMutex {
 
     TaskMutex.locks.set(
       key,
-      previous.then(() => current),
+      previous.then(() => current)
     );
 
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(
         () =>
           reject(new Error(`[TaskMutex] Lock acquisition timeout for ${key} after ${timeoutMs}ms`)),
-        timeoutMs,
+        timeoutMs
       );
     });
 
@@ -38,7 +38,7 @@ export class TaskMutex {
       if (TaskMutex.locks.get(key) === current) {
         TaskMutex.locks.delete(key);
       }
-      release!();
+      release?.();
     }
   }
 }

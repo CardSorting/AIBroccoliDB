@@ -29,7 +29,7 @@ export class ActionExecutor {
   async execute<T>(
     taskId: string,
     operation: () => Promise<T>,
-    options: ExecuteOptions = {},
+    options: ExecuteOptions = {}
   ): Promise<T> {
     const {
       timeoutMs = ActionExecutor.CONFIG.DEFAULT_TIMEOUT,
@@ -43,7 +43,7 @@ export class ActionExecutor {
     while (attempts < maxRetries) {
       try {
         const result = await this.withConcurrency(concurrencyGroup, () =>
-          this.withTimeout(taskId, operation(), timeoutMs),
+          this.withTimeout(taskId, operation(), timeoutMs)
         );
         return result;
       } catch (err: any) {
@@ -53,14 +53,14 @@ export class ActionExecutor {
         if (attempts >= maxRetries || !isRetryable) {
           console.error(
             `[ActionExecutor] Task ${taskId} failed permanently after ${attempts} attempts:`,
-            err,
+            err
           );
           throw err;
         }
 
         const delay = backoffMs * 2 ** (attempts - 1);
         console.warn(
-          `[ActionExecutor] Task ${taskId} retrying (${attempts}/${maxRetries}) because of retryable error: ${err.message || err}. Backoff: ${delay}ms`,
+          `[ActionExecutor] Task ${taskId} retrying (${attempts}/${maxRetries}) because of retryable error: ${err.message || err}. Backoff: ${delay}ms`
         );
         await new Promise((r) => setTimeout(r, delay));
       }
@@ -84,7 +84,7 @@ export class ActionExecutor {
 
     ActionExecutor.activeOperations.set(
       group,
-      (ActionExecutor.activeOperations.get(group) || 0) + 1,
+      (ActionExecutor.activeOperations.get(group) || 0) + 1
     );
 
     try {
@@ -109,7 +109,7 @@ export class ActionExecutor {
     const timeout = new Promise<never>((_, reject) => {
       setTimeout(
         () => reject(new Error(`[ActionExecutor] Task ${id} timed out after ${ms}ms`)),
-        ms,
+        ms
       );
     });
     return Promise.race([promise, timeout]);

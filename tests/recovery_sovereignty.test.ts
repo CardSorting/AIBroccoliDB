@@ -1,6 +1,6 @@
-import { dbPool } from '../infrastructure/db/BufferedDbPool.js';
 import assert from 'node:assert';
 import fs from 'node:fs';
+import { dbPool } from '../infrastructure/db/BufferedDbPool.js';
 
 async function runTest() {
   const dbPath = './test-warmup.db';
@@ -12,34 +12,37 @@ async function runTest() {
     await dbPool.push({
       type: 'insert',
       table: 'queue_jobs' as any,
-      values: { 
-        id: `job-${i}`, 
-        payload: 'test', 
+      values: {
+        id: `job-${i}`,
+        payload: 'test',
         status: 'pending',
         priority: 0,
         attempts: 0,
         maxAttempts: 5,
         runAt: Date.now(),
         createdAt: Date.now(),
-        updatedAt: Date.now()
-      }
+        updatedAt: Date.now(),
+      },
     });
   }
   await dbPool.flush();
-  
+
   // Verify disk has data
-  const initialSelect = await dbPool.selectWhere('queue_jobs', { column: 'status', value: 'pending' });
+  const initialSelect = await dbPool.selectWhere('queue_jobs', {
+    column: 'status',
+    value: 'pending',
+  });
   assert.strictEqual(initialSelect.length, 100, 'Initial setup failed');
 
   console.log('--- PHASE 2: REBOOTING (CLEARING BRAIN) ---');
   // 2. Simulate Reboot (Clean the in-memory indexes)
-  // @ts-ignore
+  // @ts-expect-error
   dbPool.activeIndex.clear();
-  // @ts-ignore
+  // @ts-expect-error
   dbPool.activeBuffer.clear();
 
   // 3. Verify Brain is empty (Cold Start)
-  // @ts-ignore
+  // @ts-expect-error
   const coldIndex = dbPool.activeIndex.get('queue_jobs')?.get('status:pending');
   assert.strictEqual(coldIndex?.size || 0, 0, 'Brain was not successfully cleared');
 
@@ -48,11 +51,11 @@ async function runTest() {
   const startWarmup = performance.now();
   const warmedCount = await dbPool.warmupTable('queue_jobs', 'status', 'pending');
   const duration = performance.now() - startWarmup;
-  
+
   console.log(`Warmup complete: ${warmedCount} items hydrated in ${duration.toFixed(2)}ms`);
 
   // 5. Verify Brain is Warmed
-  // @ts-ignore
+  // @ts-expect-error
   const warmIndex = dbPool.activeIndex.get('queue_jobs')?.get('status:pending');
   assert.strictEqual(warmIndex?.size, 100, 'Brain failed to hydrate from Notebook');
 
@@ -62,14 +65,14 @@ async function runTest() {
   const queryDuration = performance.now() - startQuery;
 
   console.log(`Fast Query (from RAM): ${results.length} items in ${queryDuration.toFixed(4)}ms`);
-  
+
   assert.strictEqual(results.length, 100, 'Final query failed');
   console.log('✅ TEST PASSED: Sovereign Recovery (Level 9) verified.');
 
   if (fs.existsSync(dbPath)) fs.unlinkSync(dbPath);
 }
 
-runTest().catch(err => {
+runTest().catch((err) => {
   console.error('❌ TEST FAILED:', err);
   process.exit(1);
 });

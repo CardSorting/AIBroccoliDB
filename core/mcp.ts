@@ -1,8 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import type { AgentContext, TraversalFilter } from './agent-context.js';
 import type { GraphEdge, KnowledgeBaseItem } from './agent-context/types.js';
+import type { AgentContext, TraversalFilter } from './agent-context.js';
 import { executor } from './executor.js';
 import type { Repository } from './repository.js';
 import { EnvironmentTracker, telemetryQueue } from './tracker.js';
@@ -28,10 +28,10 @@ export class BroccoliDBMCP {
     setInterval(
       () => {
         this.cleanupExpiredBranches().catch((err) =>
-          console.error(`[AgentGit][Lifecycle] Cleanup failed: ${err}`),
+          console.error(`[AgentGit][Lifecycle] Cleanup failed: ${err}`)
         );
       },
-      15 * 60 * 1000,
+      15 * 60 * 1000
     );
     // Also run once on startup
     this.cleanupExpiredBranches().catch(() => {});
@@ -56,7 +56,7 @@ export class BroccoliDBMCP {
 
   private async executeTool<T>(
     name: string,
-    op: () => Promise<T>,
+    op: () => Promise<T>
   ): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
     try {
       const result = await executor.execute(`mcp:${name}`, op);
@@ -96,7 +96,7 @@ export class BroccoliDBMCP {
             'No files found.'
           );
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -111,7 +111,7 @@ export class BroccoliDBMCP {
           const file = await this.repo.files().readFile(args.branch, args.path);
           return file.content;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -140,7 +140,7 @@ export class BroccoliDBMCP {
             });
           return `Successfully wrote file and created commit ${commitId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -157,7 +157,7 @@ export class BroccoliDBMCP {
             .deleteFile(args.branch, args.path, 'AgentGitMCP');
           return `Successfully deleted file and created commit ${commitId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -174,7 +174,7 @@ export class BroccoliDBMCP {
           if (!latest) return `Branch empty or not found.`;
           return `Currently at commit ${latest.id} by ${latest.author || 'System'}\nMessage: ${latest.message || 'No message'}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -188,7 +188,7 @@ export class BroccoliDBMCP {
         return this.executeTool('diff', async () => {
           return await this.repo.diff(args.refA, args.refB);
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -214,13 +214,13 @@ export class BroccoliDBMCP {
               .map(
                 (h) =>
                   `[${h.id.substring(0, 7)}] ${h.author}: ${h.message} (${new Date(
-                    h.timestamp,
-                  ).toISOString()})`,
+                    h.timestamp
+                  ).toISOString()})`
               )
               .join('\n') || 'No history found matching criteria.'
           );
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -233,7 +233,7 @@ export class BroccoliDBMCP {
         return this.executeTool('status', async () => {
           return await this.repo.status(args.branch);
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -248,7 +248,7 @@ export class BroccoliDBMCP {
         return this.executeTool('rebase', async () => {
           return await this.repo.rebase(args.branch, args.onto, args.author);
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -263,7 +263,7 @@ export class BroccoliDBMCP {
           const stashId = await this.repo.stash(args.branch, args.label);
           return `Successfully stashed state. Stash ID: ${stashId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -282,7 +282,7 @@ export class BroccoliDBMCP {
           });
           return `Bisect complete. First "bad" node found: ${result.id} (${result.message})`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -298,7 +298,7 @@ export class BroccoliDBMCP {
           const resultId = await this.repo.merge(args.source, args.target, args.author);
           return resultId ? `Successfully merged. New commit: ${resultId}` : 'Already up to date.';
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -313,7 +313,7 @@ export class BroccoliDBMCP {
           await this.repo.branchHypothesis(args.baseRef, args.hypothesisName);
           return `Created hypothesis branch '${args.hypothesisName}' from '${args.baseRef}'`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -331,13 +331,13 @@ export class BroccoliDBMCP {
             args.source,
             args.target,
             args.author,
-            args.message,
+            args.message
           );
           return resId
             ? `Successfully merged conclusion. New node: ${resId}`
             : 'Already up to date.';
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -367,7 +367,7 @@ export class BroccoliDBMCP {
 
           return report;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -389,7 +389,7 @@ export class BroccoliDBMCP {
           }
           return output;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -409,7 +409,7 @@ export class BroccoliDBMCP {
           }
           return output;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -442,7 +442,7 @@ export class BroccoliDBMCP {
 
           return `\`\`\`mermaid\n${mermaid}\n\`\`\``;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -458,7 +458,7 @@ export class BroccoliDBMCP {
           const resultId = await this.repo.cherryPick(args.nodeId, args.target, args.author);
           return `Successfully cherry-picked into ${resultId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -469,7 +469,7 @@ export class BroccoliDBMCP {
         summaryData: z
           .string()
           .describe(
-            'The compacted JSON data representing the aggregated state/decisions. Must be valid JSON.',
+            'The compacted JSON data representing the aggregated state/decisions. Must be valid JSON.'
           ),
         message: z.string().describe('Summary message describing what was compacted'),
         author: z.string().describe('Author name'),
@@ -491,11 +491,11 @@ export class BroccoliDBMCP {
             args.branch,
             parsedData,
             args.author,
-            args.message,
+            args.message
           );
           return `Successfully compacted history into summary node ${commitId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -510,7 +510,7 @@ export class BroccoliDBMCP {
           await this.repo.createBranch(args.scratchpadName, args.baseRef);
           return `Created isolated scratchpad branch '${args.scratchpadName}' from '${args.baseRef}'`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -528,7 +528,7 @@ export class BroccoliDBMCP {
             'No structural correlations found.'
           );
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -546,7 +546,7 @@ export class BroccoliDBMCP {
           const recoveryId = await this.repo.timeTravel(args.branch, date, args.author);
           return `Time travel successful. Branch rolled back to node: ${recoveryId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -561,7 +561,7 @@ export class BroccoliDBMCP {
           const blameInfo = await this.repo.blame(args.branch, args.path);
           return `Last modified by: ${blameInfo.lastAuthor}\nCommit: ${blameInfo.lastNodeId}\nMessage: ${blameInfo.lastMessage}\nTime: ${new Date(blameInfo.lastTimestamp).toISOString()}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -577,7 +577,7 @@ export class BroccoliDBMCP {
           const commitId = await this.repo.revert(args.branch, args.nodeId, args.author);
           return `Successfully reverted ${args.nodeId}. Revert commit: ${commitId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -593,7 +593,7 @@ export class BroccoliDBMCP {
           await this.repo.files().claimFile(args.branch, args.path, args.author);
           return `Successfully claimed ${args.path} on ${args.branch} for ${args.author}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -609,7 +609,7 @@ export class BroccoliDBMCP {
           await this.repo.files().releaseFile(args.branch, args.path, args.author);
           return `Successfully released claim on ${args.path} for ${args.author}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -624,7 +624,7 @@ export class BroccoliDBMCP {
           const changelog = await this.repo.generateChangelog(args.baseRef, args.headRef);
           return changelog;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -640,7 +640,7 @@ export class BroccoliDBMCP {
           const commitId = await this.repo.recoverFile(args.branch, args.path, args.author);
           return `Successfully recovered ${args.path} in new commit ${commitId}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -665,7 +665,7 @@ export class BroccoliDBMCP {
 
           return `Created ghost branch '${args.ghostName}'. It will self-destruct in ${args.ttlMinutes} minutes (at ${new Date(expiresAt).toISOString()}).`;
         });
-      },
+      }
     );
 
     if (this.agentContext) {
@@ -706,7 +706,7 @@ export class BroccoliDBMCP {
             });
             return `Successfully added knowledge graph node: ${newId}`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -720,45 +720,45 @@ export class BroccoliDBMCP {
             .string()
             .optional()
             .describe(
-              'Optional JSON array of numbers representing the query embedding vector for cosine similarity ranking',
+              'Optional JSON array of numbers representing the query embedding vector for cosine similarity ranking'
             ),
           augmentWithGraph: z
             .boolean()
             .optional()
             .default(false)
             .describe(
-              'If true, perform 1-hop traversal from top results to include neighboring context',
+              'If true, perform 1-hop traversal from top results to include neighboring context'
             ),
         },
         async (args) => {
           return this.executeTool('kb_search', async () => {
-          const results = await context.searchKnowledge(
-            args.query,
-            args.tags
-              ? args.tags
-                  .split(',')
-                  .map((t) => t.trim())
-                  .filter(Boolean)
-              : undefined,
-            args.limit,
-            args.queryEmbeddingJson ? JSON.parse(args.queryEmbeddingJson) : undefined,
-            { augmentWithGraph: args.augmentWithGraph },
-          );
-          const formatted = results
-            .map(
-              (r: KnowledgeBaseItem) =>
-                `[Node: ${r.itemId}] ${r.content}\nMetadata: ${JSON.stringify({
-                  type: r.type,
-                  confidence: r.confidence,
-                  tags: r.tags,
-                  edges: r.edges,
-                  inboundEdges: r.inboundEdges,
-                })}`,
-            )
-            .join('\n---\n');
-          return formatted || 'No knowledge nodes found for this query.';
+            const results = await context.searchKnowledge(
+              args.query,
+              args.tags
+                ? args.tags
+                    .split(',')
+                    .map((t) => t.trim())
+                    .filter(Boolean)
+                : undefined,
+              args.limit,
+              args.queryEmbeddingJson ? JSON.parse(args.queryEmbeddingJson) : undefined,
+              { augmentWithGraph: args.augmentWithGraph }
+            );
+            const formatted = results
+              .map(
+                (r: KnowledgeBaseItem) =>
+                  `[Node: ${r.itemId}] ${r.content}\nMetadata: ${JSON.stringify({
+                    type: r.type,
+                    confidence: r.confidence,
+                    tags: r.tags,
+                    edges: r.edges,
+                    inboundEdges: r.inboundEdges,
+                  })}`
+              )
+              .join('\n---\n');
+            return formatted || 'No knowledge nodes found for this query.';
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -780,7 +780,7 @@ export class BroccoliDBMCP {
             .string()
             .optional()
             .describe(
-              'Comma-separated edge types to follow (supports,contradicts,blocks,depends_on,references)',
+              'Comma-separated edge types to follow (supports,contradicts,blocks,depends_on,references)'
             ),
           minWeight: z.number().optional().describe('Minimum edge weight threshold (0.0–1.0)'),
         },
@@ -788,7 +788,9 @@ export class BroccoliDBMCP {
           return this.executeTool('kb_query', async () => {
             const filter: TraversalFilter = { direction: args.direction };
             if (args.edgeTypes) {
-              filter.edgeTypes = args.edgeTypes.split(',').map((t) => t.trim()) as GraphEdge['type'][];
+              filter.edgeTypes = args.edgeTypes
+                .split(',')
+                .map((t) => t.trim()) as GraphEdge['type'][];
             }
             if (args.minWeight !== undefined) {
               filter.minWeight = args.minWeight;
@@ -796,7 +798,7 @@ export class BroccoliDBMCP {
             const results = await context.traverseGraph(args.kbId, args.maxDepth, filter);
             return JSON.stringify(results, null, 2);
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -810,7 +812,7 @@ export class BroccoliDBMCP {
             const bundle = await context.getAgentBundle(args.agentId);
             return JSON.stringify(bundle, null, 2);
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -825,7 +827,7 @@ export class BroccoliDBMCP {
             await context.appendMemoryLayer(args.agentId, args.memory);
             return `Successfully appended memory to ${args.agentId}'s memory layer.`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -841,7 +843,7 @@ export class BroccoliDBMCP {
             await context.appendSharedMemory(args.memory);
             return `Successfully appended memory to the swarm-wide shared rulebook.`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -864,7 +866,7 @@ export class BroccoliDBMCP {
             await context.spawnTask(args.taskId, args.agentId, args.description, kbIds);
             return `Task '${args.taskId}' spawned successfully.`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -878,7 +880,7 @@ export class BroccoliDBMCP {
             const taskContext = await context.getTaskContext(args.taskId);
             return JSON.stringify(taskContext, null, 2);
           });
-        },
+        }
       );
 
       // ─── KNOWLEDGE LIFECYCLE TOOLS ───
@@ -910,7 +912,7 @@ export class BroccoliDBMCP {
             await context.updateKnowledge(args.kbId, patch);
             return `Successfully updated knowledge node: ${args.kbId}`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -924,7 +926,7 @@ export class BroccoliDBMCP {
             await context.deleteKnowledge(args.kbId);
             return `Successfully deleted knowledge node: ${args.kbId}`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -941,7 +943,7 @@ export class BroccoliDBMCP {
             await context.mergeKnowledge(args.sourceId, args.targetId);
             return `Successfully merged ${args.sourceId} into ${args.targetId}. Source deleted.`;
           });
-        },
+        }
       );
 
       // ─── GRAPH ANALYTICS TOOLS ───
@@ -957,7 +959,7 @@ export class BroccoliDBMCP {
             const result = await context.getNodeCentrality(args.kbId);
             return `Node: ${result.kbId}\nInbound Edges: ${result.inbound}\nOutbound Edges: ${result.outbound}\nTotal Degree Centrality: ${result.totalDegree}`;
           });
-        },
+        }
       );
 
       this.server.tool(
@@ -977,12 +979,14 @@ export class BroccoliDBMCP {
           return this.executeTool('extract_subgraph', async () => {
             const filter: TraversalFilter = { direction: args.direction };
             if (args.edgeTypes) {
-              filter.edgeTypes = args.edgeTypes.split(',').map((t) => t.trim()) as GraphEdge['type'][];
+              filter.edgeTypes = args.edgeTypes
+                .split(',')
+                .map((t) => t.trim()) as GraphEdge['type'][];
             }
             const subgraph = await context.extractSubgraph(args.rootId, args.maxDepth, filter);
             return JSON.stringify(subgraph, null, 2);
           });
-        },
+        }
       );
 
       // ─── CONFIDENCE DECAY TOOL ───
@@ -1005,7 +1009,7 @@ export class BroccoliDBMCP {
             const result = await context.decayConfidence(args.factor, olderThan);
             return `Confidence decay applied. ${result.decayedCount} nodes affected.`;
           });
-        },
+        }
       );
 
       // ─── EMBEDDING TOOLS ───
@@ -1034,7 +1038,7 @@ export class BroccoliDBMCP {
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
 
       this.server.tool(
@@ -1049,7 +1053,7 @@ export class BroccoliDBMCP {
             .optional()
             .default(false)
             .describe(
-              'If true, perform 1-hop traversal from top results to include neighboring context',
+              'If true, perform 1-hop traversal from top results to include neighboring context'
             ),
         },
         async (args) => {
@@ -1065,7 +1069,7 @@ export class BroccoliDBMCP {
               tagsArray,
               args.limit,
               undefined,
-              { augmentWithGraph: args.augmentWithGraph },
+              { augmentWithGraph: args.augmentWithGraph }
             );
             const formatted = results
               .map((r: KnowledgeBaseItem) => {
@@ -1078,7 +1082,7 @@ export class BroccoliDBMCP {
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
 
       this.server.tool(
@@ -1100,7 +1104,7 @@ export class BroccoliDBMCP {
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
 
       this.server.tool(
@@ -1116,7 +1120,7 @@ export class BroccoliDBMCP {
               this.repo.getDb(),
               this.repo.getBasePath(),
               args.agentId,
-              args.taskId,
+              args.taskId
             );
             const report = EnvironmentTracker.getReport(stats);
             return { content: [{ type: 'text', text: report }] };
@@ -1124,7 +1128,7 @@ export class BroccoliDBMCP {
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
 
       this.server.tool(
@@ -1139,7 +1143,7 @@ export class BroccoliDBMCP {
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
 
       this.server.tool(
@@ -1154,7 +1158,7 @@ export class BroccoliDBMCP {
             const formatted = hubs
               .map(
                 (h: { kbId: string; score: number }) =>
-                  `Node: ${h.kbId} | Centrality Score: ${h.score}`,
+                  `Node: ${h.kbId} | Centrality Score: ${h.score}`
               )
               .join('\n');
             return { content: [{ type: 'text', text: formatted || 'No hubs discovered yet.' }] };
@@ -1162,7 +1166,7 @@ export class BroccoliDBMCP {
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
 
       this.server.tool(
@@ -1187,7 +1191,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
             const message = e instanceof Error ? e.message : String(e);
             return { content: [{ type: 'text', text: `Error: ${message}` }], isError: true };
           }
-        },
+        }
       );
     }
 
@@ -1200,7 +1204,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
       async () => {
         const stats = this.repo.getTreeCacheStats();
         return { content: [{ type: 'text', text: JSON.stringify(stats, null, 2) }] };
-      },
+      }
     );
 
     this.server.tool(
@@ -1218,7 +1222,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
             },
           ],
         };
-      },
+      }
     );
 
     this.server.tool(
@@ -1233,7 +1237,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
           const result = await this.agentContext.autoDiscoverRelationships(args.nodeId);
           return `Proactive Audit Complete.\nNodes discovered: ${result.discovered}\nSuggestions:\n${result.suggestions.join('\n')}`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -1247,7 +1251,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
           if (!this.agentContext) return 'AgentContext not available.';
           return await this.agentContext.getNarrativePedigree(args.nodeId);
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -1276,7 +1280,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
           }
           return output;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -1297,11 +1301,11 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
           await this.agentContext.addLogicalConstraint(
             args.pathPattern,
             args.knowledgeId,
-            args.severity,
+            args.severity
           );
           return `Successfully bound rule ${args.knowledgeId} to ${args.pathPattern} (${args.severity})`;
         });
-      },
+      }
     );
 
     this.server.tool(
@@ -1320,7 +1324,7 @@ Affected Paths: ${result.affectedPaths.join(', ') || 'None'}
               .join('\n')
           );
         });
-      },
+      }
     );
   }
 

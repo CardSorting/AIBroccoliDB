@@ -1,6 +1,6 @@
 import * as crypto from 'node:crypto';
 import { EventEmitter } from 'node:events';
-import { dbPool, BufferedDbPool } from '../db/BufferedDbPool.js';
+import { BufferedDbPool, dbPool } from '../db/BufferedDbPool.js';
 
 export interface QueueJob<T> {
   id: string;
@@ -45,9 +45,11 @@ export class SqliteQueue<T> {
   private pruneDoneAgeMs: number;
   private defaultMaxAttempts: number;
   private baseRetryDelayMs: number;
-  
+
   private bufferSize(): number {
-    return (this.bufferTail - this.bufferHead + this.maxMemoryBufferSize) % this.maxMemoryBufferSize;
+    return (
+      (this.bufferTail - this.bufferHead + this.maxMemoryBufferSize) % this.maxMemoryBufferSize
+    );
   }
 
   constructor(options: SqliteQueueOptions = {}) {
@@ -74,7 +76,7 @@ export class SqliteQueue<T> {
       priority?: number;
       delayMs?: number;
       maxAttempts?: number;
-    } = {},
+    } = {}
   ): Promise<string> {
     const jobId = options.id || crypto.randomUUID();
     const now = Date.now();
@@ -119,7 +121,7 @@ export class SqliteQueue<T> {
    * Enqueue multiple jobs in a single transaction for high throughput.
    */
   async enqueueBatch(
-    items: { payload: T; priority?: number; delayMs?: number; id?: string }[],
+    items: { payload: T; priority?: number; delayMs?: number; id?: string }[]
   ): Promise<string[]> {
     const ids: string[] = [];
     const now = Date.now();
@@ -173,7 +175,7 @@ export class SqliteQueue<T> {
     if (memoryJobsCount > 0) {
       const actualLimit = Math.min(limit, memoryJobsCount);
       const jobs: QueueJob<T>[] = [];
-      
+
       for (let i = 0; i < actualLimit; i++) {
         const job = this.pendingMemoryBuffer[this.bufferHead];
         if (job) jobs.push(job);
@@ -185,17 +187,19 @@ export class SqliteQueue<T> {
       const nowMs = Date.now();
 
       // Non-blocking update (doubling down on write-behind)
-      dbPool.push({
-        type: 'update',
-        table: 'queue_jobs',
-        values: {
-          status: 'processing',
-          updatedAt: nowMs,
-          attempts: BufferedDbPool.increment(1),
-        },
-        where: { column: 'id', value: ids, operator: 'IN' },
-        layer: 'infrastructure',
-      }).catch((err) => console.error('[SqliteQueue] Background status update failed:', err));
+      dbPool
+        .push({
+          type: 'update',
+          table: 'queue_jobs',
+          values: {
+            status: 'processing',
+            updatedAt: nowMs,
+            attempts: BufferedDbPool.increment(1),
+          },
+          where: { column: 'id', value: ids, operator: 'IN' },
+          layer: 'infrastructure',
+        })
+        .catch((err) => console.error('[SqliteQueue] Background status update failed:', err));
 
       return jobs.map((job) => ({
         ...job,
@@ -218,7 +222,7 @@ export class SqliteQueue<T> {
           {
             orderBy: { column: 'priority', direction: 'desc' },
             limit: limit * 2, // Fetch extra for pre-filling local buffer
-          },
+          }
         );
 
         if (jobs.length === 0) return [];
@@ -227,9 +231,11 @@ export class SqliteQueue<T> {
 
         const mappedJobs = jobs.map((job) => ({
           ...job,
-          payload: typeof job.payload === 'string' && (job.payload.startsWith('{') || job.payload.startsWith('['))
-            ? (JSON.parse(job.payload) as T)
-            : (job.payload as T),
+          payload:
+            typeof job.payload === 'string' &&
+            (job.payload.startsWith('{') || job.payload.startsWith('['))
+              ? (JSON.parse(job.payload) as T)
+              : (job.payload as T),
           updatedAt: nowMs,
           attempts: job.attempts + 1,
           status: 'processing' as const,
@@ -252,7 +258,7 @@ export class SqliteQueue<T> {
             where: { column: 'id', value: allIds, operator: 'IN' },
             layer: 'infrastructure',
           },
-          agentId,
+          agentId
         );
 
         // Fill memory buffer for next call
@@ -290,7 +296,7 @@ export class SqliteQueue<T> {
         values: { status: 'pending', updatedAt: nowMs },
         where: { column: 'id', value: job.id },
         layer: 'infrastructure',
-      })),
+      }))
     );
 
     console.warn(`[SqliteQueue] Reclaiming ${staleJobs.length} stale jobs.`);
@@ -374,7 +380,7 @@ export class SqliteQueue<T> {
         const lastMaint = await dbPool.selectOne(
           'queue_settings',
           { column: 'key', value: 'last_maintenance' },
-          agentId,
+          agentId
         );
         if (lastMaint && now - Number(lastMaint.value) < 10000) return; // Only once every 10s
 
@@ -386,7 +392,7 @@ export class SqliteQueue<T> {
             where: { column: 'key', value: 'last_maintenance' },
             layer: 'infrastructure',
           },
-          agentId,
+          agentId
         );
 
         // 1. Reclaim stale jobs
@@ -400,7 +406,7 @@ export class SqliteQueue<T> {
             { column: 'status', value: 'done' },
             { column: 'updatedAt', value: pruneThreshold, operator: '<' },
           ],
-          agentId,
+          agentId
         );
 
         if (oldJobs.length > 0) {
@@ -411,7 +417,7 @@ export class SqliteQueue<T> {
               where: { column: 'id', value: j.id },
               layer: 'infrastructure',
             })),
-            agentId,
+            agentId
           );
           console.log(`[SqliteQueue] Pruned ${oldJobs.length} old completed jobs.`);
         }
@@ -427,20 +433,20 @@ export class SqliteQueue<T> {
    */
   async process(
     handler: JobHandler<T>,
-    options: { 
-      concurrency?: number; 
-      pollIntervalMs?: number; 
+    options: {
+      concurrency?: number;
+      pollIntervalMs?: number;
       batchSize?: number;
       completionFlushMs?: number;
-    } = {},
+    } = {}
   ) {
-    const { 
-      concurrency = 500, 
-      pollIntervalMs = 1, 
+    const {
+      concurrency = 500,
+      pollIntervalMs = 1,
       batchSize = 500,
       completionFlushMs = 1,
     } = options;
-    
+
     if (this.isProcessing) return;
     this.isProcessing = true;
     this.stopRequested = false;
@@ -457,18 +463,18 @@ export class SqliteQueue<T> {
     const flushCompletions = async () => {
       completionFlushPending = false;
       lastFlushTime = Date.now();
-      
+
       const completionsToFlush = pendingCompletions;
       const failuresToFlush = pendingFailures;
       pendingCompletions = [];
       pendingFailures = [];
 
       const promises: Promise<void>[] = [];
-      
+
       if (completionsToFlush.length > 0) {
         promises.push(this.completeBatch(completionsToFlush));
       }
-      
+
       if (failuresToFlush.length > 0) {
         // Batch fail operations
         const now = Date.now();
@@ -489,9 +495,10 @@ export class SqliteQueue<T> {
 
     const scheduleCompletion = (id: string) => {
       pendingCompletions.push(id);
-      const shouldFlush = pendingCompletions.length >= batchSize || 
-                         (Date.now() - lastFlushTime > completionFlushMs && !completionFlushPending);
-      
+      const shouldFlush =
+        pendingCompletions.length >= batchSize ||
+        (Date.now() - lastFlushTime > completionFlushMs && !completionFlushPending);
+
       if (shouldFlush && !completionFlushPending) {
         completionFlushPending = true;
         // Use setImmediate for immediate flush, setTimeout for debounced
@@ -525,7 +532,7 @@ export class SqliteQueue<T> {
       while (!this.stopRequested) {
         // Pipeline: dequeue next batch while previous is processing
         const limit = Math.min(batchSize, concurrency - inFlightJobs);
-        
+
         if (limit <= 0) {
           // Wait for some jobs to complete before dequeuing more
           if (jobPromises.size > 0) {
@@ -541,7 +548,7 @@ export class SqliteQueue<T> {
           if (pendingCompletions.length > 0 || pendingFailures.length > 0) {
             await flushCompletions();
           }
-          
+
           if (jobPromises.size > 0) {
             // Wait for in-flight jobs to complete
             await Promise.race(jobPromises);
@@ -558,21 +565,23 @@ export class SqliteQueue<T> {
         // Process jobs concurrently as a batch
         const batchPromise = (async () => {
           const localJobs = jobs;
-          
-          await Promise.all(localJobs.map(async (job) => {
-            try {
-              await handler(job);
-              scheduleCompletion(job.id);
-            } catch (err: unknown) {
-              const error = err instanceof Error ? err.message : String(err);
-              scheduleFailure(job.id, error);
-            }
-          }));
+
+          await Promise.all(
+            localJobs.map(async (job) => {
+              try {
+                await handler(job);
+                scheduleCompletion(job.id);
+              } catch (err: unknown) {
+                const error = err instanceof Error ? err.message : String(err);
+                scheduleFailure(job.id, error);
+              }
+            })
+          );
         })();
 
         inFlightJobs += jobs.length;
         jobPromises.add(batchPromise);
-        
+
         batchPromise
           .then(() => {
             inFlightJobs -= jobs.length;
@@ -604,26 +613,26 @@ export class SqliteQueue<T> {
   /**
    * High-throughput batch processing loop.
    * Processes jobs in true batches, reducing transaction overhead by 10x or more.
-   * 
+   *
    * @param batchHandler - Receives an array of jobs to process as a batch
    * @param options - Configuration options
    */
   async processBatch(
     batchHandler: BatchJobHandler<T>,
-    options: { 
-      pollIntervalMs?: number; 
+    options: {
+      pollIntervalMs?: number;
       batchSize?: number;
       maxInFlightBatches?: number;
       completionFlushMs?: number;
-    } = {},
+    } = {}
   ) {
-    const { 
-      pollIntervalMs = 1, 
+    const {
+      pollIntervalMs = 1,
       batchSize = 1000,
       maxInFlightBatches = 5,
       completionFlushMs = 1,
     } = options;
-    
+
     if (this.isProcessing) return;
     this.isProcessing = true;
     this.stopRequested = false;
@@ -640,18 +649,18 @@ export class SqliteQueue<T> {
     const flushCompletions = async () => {
       completionFlushPending = false;
       lastFlushTime = Date.now();
-      
+
       const completionsToFlush = pendingCompletions;
       const failuresToFlush = pendingFailures;
       pendingCompletions = [];
       pendingFailures = [];
 
       const promises: Promise<void>[] = [];
-      
+
       if (completionsToFlush.length > 0) {
         promises.push(this.completeBatch(completionsToFlush));
       }
-      
+
       if (failuresToFlush.length > 0) {
         const now = Date.now();
         const ops = failuresToFlush.map(({ id, error }) => ({
@@ -671,9 +680,10 @@ export class SqliteQueue<T> {
 
     const scheduleCompletion = (id: string) => {
       pendingCompletions.push(id);
-      const shouldFlush = pendingCompletions.length >= batchSize || 
-                         (Date.now() - lastFlushTime > completionFlushMs && !completionFlushPending);
-      
+      const shouldFlush =
+        pendingCompletions.length >= batchSize ||
+        (Date.now() - lastFlushTime > completionFlushMs && !completionFlushPending);
+
       if (shouldFlush && !completionFlushPending) {
         completionFlushPending = true;
         if (pendingCompletions.length >= batchSize) {
@@ -717,7 +727,7 @@ export class SqliteQueue<T> {
           if (pendingCompletions.length > 0 || pendingFailures.length > 0) {
             await flushCompletions();
           }
-          
+
           if (batchPromises.size > 0) {
             await Promise.race(batchPromises);
           } else {
@@ -738,7 +748,7 @@ export class SqliteQueue<T> {
           try {
             // User's batch handler processes all jobs
             await batchHandler(localJobs);
-            
+
             // Mark all as completed (user is responsible for individual failures)
             for (const job of localJobs) {
               completedIds.push(job.id);
@@ -762,7 +772,7 @@ export class SqliteQueue<T> {
 
         inFlightBatches++;
         batchPromises.add(currentBatchPromise);
-        
+
         currentBatchPromise
           .then(() => {
             inFlightBatches--;
@@ -795,7 +805,10 @@ export class SqliteQueue<T> {
   }
 
   async size(): Promise<number> {
-    const pendingJobs = await dbPool.selectWhere('queue_jobs', { column: 'status', value: 'pending' });
+    const pendingJobs = await dbPool.selectWhere('queue_jobs', {
+      column: 'status',
+      value: 'pending',
+    });
     return pendingJobs.length;
   }
 

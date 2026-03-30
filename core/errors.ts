@@ -36,7 +36,7 @@ export class AgentGitError extends Error {
   constructor(
     message: string,
     public code: AgentGitErrorCode,
-    public conflicts?: string[],
+    public conflicts?: string[]
   ) {
     super(message);
     this.name = 'AgentGitError';
@@ -66,7 +66,7 @@ export class PathSanitizer {
     if (parts.some((p) => p === '..' || p === '.')) {
       throw new AgentGitError(
         `Security breach attempt: path traversal detected in '${path}'`,
-        'INVALID_PATH',
+        'INVALID_PATH'
       );
     }
 

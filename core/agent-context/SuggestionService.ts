@@ -36,7 +36,7 @@ export class SuggestionService {
       gitStatus?: string;
       messages?: unknown[];
     },
-    agentContext: IAgentContext,
+    agentContext: IAgentContext
   ): Promise<PromptSuggestion[]> {
     if (this.isGenerating) {
       return this.lastSuggestions;
@@ -48,7 +48,14 @@ export class SuggestionService {
     }
 
     this.isGenerating = true;
-    const { mode, activeFilePath, fileContent, diagnostics, gitStatus, messages: _messages = [] } = params;
+    const {
+      mode,
+      activeFilePath,
+      fileContent,
+      diagnostics,
+      gitStatus,
+      messages: _messages = [],
+    } = params;
 
     try {
       if (!this.ctx.aiService?.isAvailable()) {
@@ -74,7 +81,7 @@ export class SuggestionService {
         const searchResults = await agentContext.searchKnowledge(
           `context for ${activeFilePath}: ${fileContent?.substring(0, 100)}`,
           undefined,
-          2,
+          2
         );
         semanticContext = searchResults.map((res: KnowledgeBaseItem) => res.content);
       }

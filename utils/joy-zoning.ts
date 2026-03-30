@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { type CallExpression, type ImportDeclaration, Project, SyntaxKind } from 'ts-morph';
 
 export type Layer = 'domain' | 'core' | 'infrastructure' | 'plumbing' | 'ui';
@@ -67,7 +67,7 @@ export function validateSmells(filePath: string, content: string): string[] {
     const classCount = (content.match(/class\s+/g) || []).length;
     if (classCount > 1) {
       errors.push(
-        `${path.basename(filePath)}: Multiple classes in a single file — split into separate files.`,
+        `${path.basename(filePath)}: Multiple classes in a single file — split into separate files.`
       );
     }
   }
@@ -103,14 +103,14 @@ export function validateLayering(filePath: string, content: string): string[] {
       if (layer === 'domain') {
         if (importedLayer === 'infrastructure' || importedLayer === 'ui') {
           errors.push(
-            `Domain layer in ${path.basename(filePath)} cannot import from ${importedLayer}.`,
+            `Domain layer in ${path.basename(filePath)} cannot import from ${importedLayer}.`
           );
         }
       }
       if (layer === 'core') {
         if (importedLayer === 'ui') {
           errors.push(
-            `Core layer in ${path.basename(filePath)} cannot import from UI — use events or callbacks.`,
+            `Core layer in ${path.basename(filePath)} cannot import from UI — use events or callbacks.`
           );
         }
       }
@@ -122,14 +122,14 @@ export function validateLayering(filePath: string, content: string): string[] {
       if (layer === 'ui') {
         if (importedLayer === 'infrastructure') {
           errors.push(
-            `UI layer in ${path.basename(filePath)} cannot directly import Infrastructure.`,
+            `UI layer in ${path.basename(filePath)} cannot directly import Infrastructure.`
           );
         }
       }
       if (layer === 'plumbing') {
         if (['domain', 'core', 'infrastructure', 'ui'].includes(importedLayer)) {
           errors.push(
-            `Plumbing layer in ${path.basename(filePath)} cannot depend on ${importedLayer} layer.`,
+            `Plumbing layer in ${path.basename(filePath)} cannot depend on ${importedLayer} layer.`
           );
         }
       }
@@ -143,7 +143,7 @@ export function validateLayering(filePath: string, content: string): string[] {
       const text = call.getExpression().getText();
       if (forbiddenTerms.some((term) => text.includes(term))) {
         errors.push(
-          `Architectural Violation: Forbidden call '${text}' in Domain layer file ${path.basename(filePath)}.`,
+          `Architectural Violation: Forbidden call '${text}' in Domain layer file ${path.basename(filePath)}.`
         );
       }
     });
@@ -155,7 +155,7 @@ export function validateLayering(filePath: string, content: string): string[] {
     if (moduleSpecifier.startsWith('.')) {
       const resolvedPath = path.resolve(
         path.dirname(filePath),
-        moduleSpecifier + (moduleSpecifier.endsWith('.ts') ? '' : '.ts'),
+        moduleSpecifier + (moduleSpecifier.endsWith('.ts') ? '' : '.ts')
       );
       try {
         const importedFile = project.addSourceFileAtPathIfExists(resolvedPath);
@@ -165,13 +165,13 @@ export function validateLayering(filePath: string, content: string): string[] {
             if (!spec.startsWith('.')) return false;
             const backResolved = path.resolve(
               path.dirname(resolvedPath),
-              spec + (spec.endsWith('.ts') ? '' : '.ts'),
+              spec + (spec.endsWith('.ts') ? '' : '.ts')
             );
             return backResolved === filePath;
           });
           if (isCircular) {
             errors.push(
-              `Architectural Violation: Circular dependency detected between ${path.basename(filePath)} and ${path.basename(resolvedPath)}.`,
+              `Architectural Violation: Circular dependency detected between ${path.basename(filePath)} and ${path.basename(resolvedPath)}.`
             );
           }
         }
@@ -189,7 +189,7 @@ export function validateLayering(filePath: string, content: string): string[] {
  */
 export function validateJoyZoning(
   filePath: string,
-  content: string,
+  content: string
 ): { success: boolean; errors: string[] } {
   const smellErrors = validateSmells(filePath, content);
   const layeringErrors = validateLayering(filePath, content);

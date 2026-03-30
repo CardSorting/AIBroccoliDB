@@ -1,8 +1,8 @@
-import { dbPool, BufferedDbPool } from '../infrastructure/db/BufferedDbPool.js';
-import { SqliteQueue } from '../infrastructure/queue/SqliteQueue.js';
-import { setDbPath } from '../infrastructure/db/Config.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { dbPool } from '../infrastructure/db/BufferedDbPool.js';
+import { setDbPath } from '../infrastructure/db/Config.js';
+import { SqliteQueue } from '../infrastructure/queue/SqliteQueue.js';
 
 const BENCH_DB = path.resolve(process.cwd(), 'benchmark.db');
 const NUM_OPS = 1000000;
@@ -10,20 +10,22 @@ const BATCH_SIZE = 50000;
 
 async function runBenchmark() {
   console.log('🚀 Starting BroccoliDB High-Performance Benchmark');
-  console.log(`📊 Parameters: ${NUM_OPS.toLocaleString()} ops, Batch Size: ${BATCH_SIZE.toLocaleString()}`);
+  console.log(
+    `📊 Parameters: ${NUM_OPS.toLocaleString()} ops, Batch Size: ${BATCH_SIZE.toLocaleString()}`
+  );
 
   // 0. Cleanup and Init
   if (fs.existsSync(BENCH_DB)) fs.unlinkSync(BENCH_DB);
   if (fs.existsSync(`${BENCH_DB}-wal`)) fs.unlinkSync(`${BENCH_DB}-wal`);
   if (fs.existsSync(`${BENCH_DB}-shm`)) fs.unlinkSync(`${BENCH_DB}-shm`);
-  
+
   setDbPath(BENCH_DB);
   console.log(`📂 Database: ${BENCH_DB}`);
 
   // --- TEST 1: BufferedDbPool Raw Throughput ---
   console.log('\n--- PHASE 1: BufferedDbPool Raw Throughput ---');
   const start1 = performance.now();
-  
+
   for (let i = 0; i < NUM_OPS; i += BATCH_SIZE) {
     const ops = [];
     for (let j = 0; j < BATCH_SIZE; j++) {
@@ -73,7 +75,9 @@ async function runBenchmark() {
   const duration2 = (end2 - start2) / 1000;
   const throughput2 = Math.round(NUM_OPS / duration2);
 
-  console.log(`✅ Phase 2 Complete: ${NUM_OPS.toLocaleString()} jobs enqueued in ${duration2.toFixed(2)}s`);
+  console.log(
+    `✅ Phase 2 Complete: ${NUM_OPS.toLocaleString()} jobs enqueued in ${duration2.toFixed(2)}s`
+  );
   console.log(`📈 SqliteQueue Enqueue Throughput: ${throughput2.toLocaleString()} jobs/sec`);
 
   // --- TEST 3: SqliteQueue Processing Speed ---
@@ -82,55 +86,64 @@ async function runBenchmark() {
   const start3 = performance.now();
 
   const processPromise = new Promise<void>((resolve) => {
-    queue.processBatch(async (jobs) => {
-      processedCount += jobs.length;
-      if (processedCount >= NUM_OPS) {
-        resolve();
-      }
-    }, { batchSize: 5000, maxInFlightBatches: 20 });
+    queue.processBatch(
+      async (jobs) => {
+        processedCount += jobs.length;
+        if (processedCount >= NUM_OPS) {
+          resolve();
+        }
+      },
+      { batchSize: 5000, maxInFlightBatches: 20 }
+    );
   });
 
   await processPromise;
   const end3 = performance.now();
   const duration3 = (end3 - start3) / 1000;
   const throughput3 = Math.round(NUM_OPS / duration3);
-  
+
   queue.stop();
 
-  console.log(`✅ Phase 3 Complete: ${NUM_OPS.toLocaleString()} jobs processed in ${duration3.toFixed(2)}s`);
+  console.log(
+    `✅ Phase 3 Complete: ${NUM_OPS.toLocaleString()} jobs processed in ${duration3.toFixed(2)}s`
+  );
   console.log(`📈 SqliteQueue Processing Throughput: ${throughput3.toLocaleString()} jobs/sec`);
 
   // --- TEST 4: Multi-Agent Concurrency Stress (Level 3) ---
   console.log('\n--- PHASE 4: Multi-Agent Concurrency Stress (Level 3) ---');
   const NUM_AGENTS = 20;
   const OPS_PER_AGENT = Math.floor(NUM_OPS / NUM_AGENTS);
-  console.log(`👥 Running with ${NUM_AGENTS} concurrent agents pushing ${OPS_PER_AGENT.toLocaleString()} ops each...`);
-  
+  console.log(
+    `👥 Running with ${NUM_AGENTS} concurrent agents pushing ${OPS_PER_AGENT.toLocaleString()} ops each...`
+  );
+
   const agentStart = performance.now();
   const agentTasks = [];
-  
+
   for (let a = 0; a < NUM_AGENTS; a++) {
-    agentTasks.push((async () => {
-      const agentId = `agent-${a}`;
-      for (let i = 0; i < OPS_PER_AGENT; i += BATCH_SIZE) {
-        const ops = [];
-        for (let j = 0; j < BATCH_SIZE && (i + j) < OPS_PER_AGENT; j++) {
-          ops.push({
-            type: 'insert' as const,
-            table: 'knowledge' as const,
-            values: {
-              id: `concurrent-${a}-${i + j}`,
-              userId: 'stress-user',
-              type: 'benchmark_data',
-              content: 'x'.repeat(100),
-              createdAt: Date.now(),
-            },
-            layer: 'infrastructure' as const,
-          });
+    agentTasks.push(
+      (async () => {
+        const agentId = `agent-${a}`;
+        for (let i = 0; i < OPS_PER_AGENT; i += BATCH_SIZE) {
+          const ops = [];
+          for (let j = 0; j < BATCH_SIZE && i + j < OPS_PER_AGENT; j++) {
+            ops.push({
+              type: 'insert' as const,
+              table: 'knowledge' as const,
+              values: {
+                id: `concurrent-${a}-${i + j}`,
+                userId: 'stress-user',
+                type: 'benchmark_data',
+                content: 'x'.repeat(100),
+                createdAt: Date.now(),
+              },
+              layer: 'infrastructure' as const,
+            });
+          }
+          await dbPool.pushBatch(ops, agentId); // Use agentId to test shadow/state locking
         }
-        await dbPool.pushBatch(ops, agentId); // Use agentId to test shadow/state locking
-      }
-    })());
+      })()
+    );
   }
 
   await Promise.all(agentTasks);
@@ -139,7 +152,9 @@ async function runBenchmark() {
   const agentDuration = (agentEnd - agentStart) / 1000;
   const agentThroughput = Math.round(NUM_OPS / agentDuration);
 
-  console.log(`✅ Phase 4 Complete: ${NUM_OPS.toLocaleString()} ops in ${agentDuration.toFixed(2)}s`);
+  console.log(
+    `✅ Phase 4 Complete: ${NUM_OPS.toLocaleString()} ops in ${agentDuration.toFixed(2)}s`
+  );
   console.log(`📈 Multi-Agent Throughput: ${agentThroughput.toLocaleString()} ops/sec`);
 
   // --- REPORT ---

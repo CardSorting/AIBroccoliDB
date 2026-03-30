@@ -13,7 +13,7 @@ export class LocalMirror {
   constructor(
     private readonly repo: Repository,
     private readonly branch: string,
-    private readonly localDirPath: string,
+    private readonly localDirPath: string
   ) {
     this.git = simpleGit(this.localDirPath);
   }
@@ -65,7 +65,7 @@ export class LocalMirror {
             shadowCommitHash: hash,
             patch: patch.trim(),
           },
-        },
+        }
       );
       console.log(`[LocalMirror] Successfully synced event ${hash} to cloud.`);
     } catch (err: any) {
@@ -79,7 +79,7 @@ export class LocalMirror {
         {
           type: 'snapshot',
           metadata: { shadowCommitHash: hash },
-        },
+        }
       );
     }
   }
