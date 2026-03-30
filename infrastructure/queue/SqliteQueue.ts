@@ -36,13 +36,19 @@ export class SqliteQueue<T> {
   private stopRequested = false;
   private wakeUpEmitter = new EventEmitter();
 
-  private pendingMemoryBuffer: QueueJob<T>[] = [];
-  private maxMemoryBufferSize = 100000; // Infinite Horizon scale
+  private pendingMemoryBuffer: (QueueJob<T> | null)[] = new Array(1000000).fill(null);
+  private bufferHead = 0;
+  private bufferTail = 0;
+  private maxMemoryBufferSize = 1000000; // Event Horizon scale
 
   private visibilityTimeoutMs: number;
   private pruneDoneAgeMs: number;
   private defaultMaxAttempts: number;
   private baseRetryDelayMs: number;
+  
+  private bufferSize(): number {
+    return (this.bufferTail - this.bufferHead + this.maxMemoryBufferSize) % this.maxMemoryBufferSize;
+  }
 
   constructor(options: SqliteQueueOptions = {}) {
     const {
@@ -96,12 +102,13 @@ export class SqliteQueue<T> {
       layer: 'infrastructure',
     });
 
-    // Memory-First: Add to local buffer if it's immediate and buffer has room
-    if (runAt <= now && this.pendingMemoryBuffer.length < this.maxMemoryBufferSize) {
-      this.pendingMemoryBuffer.push({
+    // Memory-First: Circular Buffer Push (O(1))
+    if (runAt <= now && this.bufferSize() < this.maxMemoryBufferSize - 1) {
+      this.pendingMemoryBuffer[this.bufferTail] = {
         ...values,
         payload: payload as T,
-      } as unknown as QueueJob<T>);
+      } as unknown as QueueJob<T>;
+      this.bufferTail = (this.bufferTail + 1) % this.maxMemoryBufferSize;
     }
 
     this.wakeUpEmitter.emit('enqueue');
@@ -134,12 +141,13 @@ export class SqliteQueue<T> {
         error: null,
       };
 
-      // Memory-First: Add to local buffer if it's immediate and buffer has room
-      if (runAt <= now && this.pendingMemoryBuffer.length < this.maxMemoryBufferSize) {
-        this.pendingMemoryBuffer.push({
+      // Memory-First: Circular Buffer Push (O(1))
+      if (runAt <= now && this.bufferSize() < this.maxMemoryBufferSize - 1) {
+        this.pendingMemoryBuffer[this.bufferTail] = {
           ...values,
           payload: item.payload as T,
-        } as unknown as QueueJob<T>);
+        } as unknown as QueueJob<T>;
+        this.bufferTail = (this.bufferTail + 1) % this.maxMemoryBufferSize;
       }
 
       return {
@@ -160,10 +168,19 @@ export class SqliteQueue<T> {
    * Prioritizes Memory-First buffer over DB polling.
    */
   async dequeueBatch(limit: number): Promise<QueueJob<T>[]> {
-    const memoryJobsCount = this.pendingMemoryBuffer.length;
-    // Memory-First: Try local buffer first (with fast-path status update)
+    const memoryJobsCount = this.bufferSize();
+    // Memory-First: Try local circular buffer first (O(1) pop)
     if (memoryJobsCount > 0) {
-      const jobs = this.pendingMemoryBuffer.splice(0, limit);
+      const actualLimit = Math.min(limit, memoryJobsCount);
+      const jobs: QueueJob<T>[] = [];
+      
+      for (let i = 0; i < actualLimit; i++) {
+        const job = this.pendingMemoryBuffer[this.bufferHead];
+        if (job) jobs.push(job);
+        this.pendingMemoryBuffer[this.bufferHead] = null; // GC friendly
+        this.bufferHead = (this.bufferHead + 1) % this.maxMemoryBufferSize;
+      }
+
       const ids = jobs.map((j) => j.id);
       const nowMs = Date.now();
 

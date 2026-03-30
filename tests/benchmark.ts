@@ -5,8 +5,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 const BENCH_DB = path.resolve(process.cwd(), 'benchmark.db');
-const NUM_OPS = 500000;
-const BATCH_SIZE = 10000;
+const NUM_OPS = 1000000;
+const BATCH_SIZE = 50000;
 
 async function runBenchmark() {
   console.log('🚀 Starting BroccoliDB High-Performance Benchmark');
@@ -87,7 +87,7 @@ async function runBenchmark() {
       if (processedCount >= NUM_OPS) {
         resolve();
       }
-    }, { batchSize: 2000, maxInFlightBatches: 10 });
+    }, { batchSize: 5000, maxInFlightBatches: 20 });
   });
 
   await processPromise;
@@ -102,7 +102,7 @@ async function runBenchmark() {
 
   // --- TEST 4: Multi-Agent Concurrency Stress (Level 3) ---
   console.log('\n--- PHASE 4: Multi-Agent Concurrency Stress (Level 3) ---');
-  const NUM_AGENTS = 10;
+  const NUM_AGENTS = 20;
   const OPS_PER_AGENT = Math.floor(NUM_OPS / NUM_AGENTS);
   console.log(`👥 Running with ${NUM_AGENTS} concurrent agents pushing ${OPS_PER_AGENT.toLocaleString()} ops each...`);
   
